@@ -7,6 +7,7 @@ export const mockProducts = [
     originalPrice: "$449",
     rating: 4.7,
     reviews: 2847,
+    category: "Health & Wellness",
     description: "The Theragun Pro 5 delivers professional-grade percussive therapy with advanced features for deep muscle treatment. Featuring a powerful motor, customizable speed settings, and ergonomic design for optimal user experience.",
     keyFeatures: [
       "2,400 percussions per minute with QuietForce Technology",
@@ -41,6 +42,7 @@ export const mockProducts = [
     originalPrice: "$399",
     rating: 4.6,
     reviews: 5234,
+    category: "Electronics",
     description: "Industry-leading noise cancellation meets exceptional sound quality in Sony's flagship wireless headphones. Perfect for travel, work, or daily listening with premium comfort and smart features.",
     keyFeatures: [
       "Industry-leading Active Noise Cancellation",

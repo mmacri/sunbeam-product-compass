@@ -165,7 +165,7 @@ export const AdminDashboard = ({ onViewProduct, onEditProduct, onDeleteProduct }
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onViewProduct(product.id)}
+                    onClick={() => onViewProduct(product.id.toString())}
                     className="dark:border-gray-600 dark:text-gray-300"
                   >
                     <Eye className="w-4 h-4" />
@@ -173,7 +173,7 @@ export const AdminDashboard = ({ onViewProduct, onEditProduct, onDeleteProduct }
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onEditProduct(product.id)}
+                    onClick={() => onEditProduct(product.id.toString())}
                     className="dark:border-gray-600 dark:text-gray-300"
                   >
                     <Edit className="w-4 h-4" />
@@ -181,7 +181,7 @@ export const AdminDashboard = ({ onViewProduct, onEditProduct, onDeleteProduct }
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onDeleteProduct(product.id)}
+                    onClick={() => onDeleteProduct(product.id.toString())}
                     className="dark:border-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900"
                   >
                     <Trash2 className="w-4 h-4" />
