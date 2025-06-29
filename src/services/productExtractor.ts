@@ -1,3 +1,4 @@
+import { RainforestApiService } from './rainforestApi';
 
 interface ProductData {
   title: string;
@@ -14,9 +15,48 @@ interface ProductData {
     price: string;
     store: string;
   }>;
+  metaTags?: string[];
+  searchTerms?: string[];
+  categories?: string[];
 }
 
 export class ProductExtractor {
+  private static useRainforestApi: boolean = false;
+  private static rainforestApiKey: string = '';
+
+  static configureRainforestApi(apiKey: string) {
+    this.rainforestApiKey = apiKey;
+    this.useRainforestApi = true;
+    RainforestApiService.setApiKey(apiKey);
+  }
+
+  static disableRainforestApi() {
+    this.useRainforestApi = false;
+    this.rainforestApiKey = '';
+  }
+
+  public static async extractFromUrl(url: string): Promise<ProductData> {
+    if (!url || !url.startsWith('http')) {
+      throw new Error('Invalid URL provided');
+    }
+
+    console.log('Extracting product data from:', url);
+
+    // Try Rainforest API first if configured and URL is Amazon
+    if (this.useRainforestApi && this.rainforestApiKey && url.includes('amazon')) {
+      try {
+        console.log('Using Rainforest API for enhanced data extraction');
+        return await RainforestApiService.extractProductData(url);
+      } catch (error) {
+        console.warn('Rainforest API failed, falling back to web scraping:', error);
+        // Fall back to web scraping if Rainforest API fails
+      }
+    }
+
+    // Use existing web scraping method
+    return await this.fetchProductData(url);
+  }
+
   private static async fetchProductData(url: string): Promise<ProductData> {
     try {
       // Use a CORS proxy to fetch the product page
@@ -36,6 +76,35 @@ export class ProductExtractor {
     }
   }
 
+  private static generateMetaTags(title: string, description: string, category: string): string[] {
+    const text = (title + ' ' + description + ' ' + category).toLowerCase();
+    const tags = [];
+    
+    // Technology tags
+    if (text.includes('wireless') || text.includes('bluetooth')) tags.push('wireless');
+    if (text.includes('smart') || text.includes('ai')) tags.push('smart');
+    if (text.includes('pro') || text.includes('professional')) tags.push('professional');
+    if (text.includes('gaming')) tags.push('gaming');
+    if (text.includes('portable')) tags.push('portable');
+    
+    // Quality tags
+    if (text.includes('premium') || text.includes('luxury')) tags.push('premium');
+    if (text.includes('budget') || text.includes('affordable')) tags.push('budget');
+    if (text.includes('eco') || text.includes('sustainable')) tags.push('eco-friendly');
+    
+    return tags;
+  }
+
+  private static generateSearchTerms(title: string, description: string): string[] {
+    const text = (title + ' ' + description).toLowerCase();
+    const words = text.split(/\s+/).filter(word => 
+      word.length > 2 && 
+      !['the', 'and', 'for', 'with', 'this', 'that', 'from'].includes(word)
+    );
+    
+    return [...new Set(words)]; // Remove duplicates
+  }
+
   private static parseProductData(doc: Document, url: string): ProductData {
     const extractors = {
       amazon: this.extractAmazonData,
@@ -53,7 +122,17 @@ export class ProductExtractor {
     else if (domain.includes('ebay')) extractor = extractors.ebay;
     else if (domain.includes('target')) extractor = extractors.target;
 
-    return extractor(doc, url);
+    const data = extractor(doc, url);
+    
+    // Enhance with meta tags and search terms
+    const metaTags = this.generateMetaTags(data.title, data.description, data.category);
+    const searchTerms = this.generateSearchTerms(data.title, data.description);
+    
+    return {
+      ...data,
+      metaTags,
+      searchTerms
+    };
   }
 
   private static extractAmazonData(doc: Document, url: string): ProductData {
@@ -269,12 +348,4 @@ export class ProductExtractor {
     }));
   }
 
-  public static async extractFromUrl(url: string): Promise<ProductData> {
-    if (!url || !url.startsWith('http')) {
-      throw new Error('Invalid URL provided');
-    }
-
-    console.log('Extracting real product data from:', url);
-    return await this.fetchProductData(url);
-  }
 }

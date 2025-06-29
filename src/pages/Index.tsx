@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +8,11 @@ import { InteractivePriceChart } from '@/components/InteractivePriceChart';
 import { ProductRequestForm } from '@/components/ProductRequestForm';
 import { mockProducts } from '@/utils/mockData';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ProductSearch } from '@/components/ProductSearch';
 
 const Index = () => {
   const [products, setProducts] = useState(mockProducts);
+  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
   const [staleDataWarning, setStaleDataWarning] = useState(false);
   const [realProducts, setRealProducts] = useState([]);
   const { theme, toggleTheme } = useTheme();
@@ -73,6 +74,10 @@ const Index = () => {
         { date: new Date().toISOString().split('T')[0], price: adminProduct.price, store: 'Current' }
       ]
     };
+  };
+
+  const handleSearchResults = (results: any[]) => {
+    setFilteredProducts(results);
   };
 
   const refreshData = () => {
@@ -165,9 +170,26 @@ const Index = () => {
           <ProductRequestForm />
         </div>
 
+        {/* Product Search */}
+        {products.length > 0 && (
+          <ProductSearch
+            products={products}
+            onSearchResults={handleSearchResults}
+          />
+        )}
+
         {/* Featured Products */}
         <div className="grid gap-8 md:gap-12">
-          {products.length === 0 ? (
+          {filteredProducts.length === 0 && products.length > 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <h3 className="text-xl font-semibold mb-4">No Products Match Your Search</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Try adjusting your search criteria or clearing the filters.
+                </p>
+              </CardContent>
+            </Card>
+          ) : filteredProducts.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
                 <h3 className="text-xl font-semibold mb-4">No Products Available Yet</h3>
@@ -183,7 +205,7 @@ const Index = () => {
               </CardContent>
             </Card>
           ) : (
-            products.map((product) => (
+            filteredProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
                 <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
                   <div className="flex items-start justify-between">
