@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,17 @@ interface LogEntry {
   details: any;
 }
 
-export const AdminDashboard = () => {
+interface AdminDashboardProps {
+  onViewProduct: (productId: string) => void;
+  onEditProduct: (productId: string) => void;
+  onDeleteProduct: (productId: string) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  onViewProduct,
+  onEditProduct,
+  onDeleteProduct
+}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [newProduct, setNewProduct] = useState({
@@ -178,6 +187,7 @@ export const AdminDashboard = () => {
     saveProducts(updatedProducts);
     logAction('product_deleted', { id });
     showMessage('Product deleted');
+    onDeleteProduct(id);
   };
 
   const saveTemplate = () => {
@@ -203,9 +213,14 @@ export const AdminDashboard = () => {
   };
 
   const exportLogs = (format: 'csv' | 'json') => {
-    const data = format === 'csv' 
-      ? logs.map(l => `${l.timestamp},${l.action},"${JSON.stringify(l.details)}"`)
-      : JSON.stringify(logs, null, 2);
+    let data: string;
+    
+    if (format === 'csv') {
+      const csvRows = logs.map(l => `${l.timestamp},${l.action},"${JSON.stringify(l.details)}"`);
+      data = ['timestamp,action,details', ...csvRows].join('\n');
+    } else {
+      data = JSON.stringify(logs, null, 2);
+    }
     
     const blob = new Blob([data], { type: format === 'csv' ? 'text/csv' : 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -377,6 +392,7 @@ export const AdminDashboard = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                onClick={() => onEditProduct(product.id)}
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
