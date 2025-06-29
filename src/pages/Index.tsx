@@ -10,9 +10,22 @@ import { mockProducts } from '@/utils/mockData';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ProductSearch } from '@/components/ProductSearch';
 
+interface SearchableProduct {
+  id: string;
+  title: string;
+  price: string;
+  category: string;
+  categories?: string[];
+  metaTags?: string[];
+  searchTerms?: string[];
+  tags: string[];
+  lastUpdated: string;
+}
+
 const Index = () => {
   const [products, setProducts] = useState(mockProducts);
   const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const [searchableProducts, setSearchableProducts] = useState<SearchableProduct[]>([]);
   const [staleDataWarning, setStaleDataWarning] = useState(false);
   const [realProducts, setRealProducts] = useState([]);
   const { theme, toggleTheme } = useTheme();
@@ -26,11 +39,16 @@ const Index = () => {
         setRealProducts(parsed);
         // If we have real products, show them instead of mock data
         if (parsed.length > 0) {
-          setProducts(parsed.map(transformAdminProduct));
+          const transformedProducts = parsed.map(transformAdminProduct);
+          setProducts(transformedProducts);
+          setSearchableProducts(parsed.map(transformToSearchableProduct));
         }
       } catch (error) {
         console.error('Failed to load real products:', error);
       }
+    } else {
+      // Transform mock products for search
+      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
     }
 
     // Check for stale data
@@ -53,8 +71,8 @@ const Index = () => {
       title: adminProduct.title,
       currentPrice: adminProduct.price,
       originalPrice: adminProduct.price,
-      rating: 4.5, // Default rating
-      reviews: 128, // Default review count
+      rating: 4.5,
+      reviews: 128,
       description: `Comprehensive review and analysis of ${adminProduct.title}. Track pricing, compare features, and make informed purchasing decisions.`,
       keyFeatures: [
         'Real-time price tracking',
@@ -76,8 +94,39 @@ const Index = () => {
     };
   };
 
-  const handleSearchResults = (results: any[]) => {
-    setFilteredProducts(results);
+  const transformToSearchableProduct = (adminProduct: any): SearchableProduct => {
+    return {
+      id: adminProduct.id,
+      title: adminProduct.title,
+      price: adminProduct.price,
+      category: adminProduct.category || 'General',
+      categories: adminProduct.categories || [],
+      metaTags: adminProduct.metaTags || [],
+      searchTerms: adminProduct.searchTerms || [],
+      tags: adminProduct.tags || [],
+      lastUpdated: adminProduct.lastUpdated
+    };
+  };
+
+  const transformMockToSearchableProduct = (mockProduct: any): SearchableProduct => {
+    return {
+      id: mockProduct.id.toString(),
+      title: mockProduct.title,
+      price: mockProduct.currentPrice,
+      category: 'Electronics',
+      categories: ['Electronics'],
+      metaTags: ['premium', 'highly-rated'],
+      searchTerms: mockProduct.title.toLowerCase().split(' '),
+      tags: ['featured', 'popular'],
+      lastUpdated: new Date().toISOString()
+    };
+  };
+
+  const handleSearchResults = (results: SearchableProduct[]) => {
+    // Filter the display products based on search results
+    const resultIds = results.map(r => r.id);
+    const filtered = products.filter(p => resultIds.includes(p.id.toString()));
+    setFilteredProducts(filtered);
   };
 
   const refreshData = () => {
@@ -91,7 +140,9 @@ const Index = () => {
         const parsed = JSON.parse(adminProducts);
         setRealProducts(parsed);
         if (parsed.length > 0) {
-          setProducts(parsed.map(transformAdminProduct));
+          const transformedProducts = parsed.map(transformAdminProduct);
+          setProducts(transformedProducts);
+          setSearchableProducts(parsed.map(transformToSearchableProduct));
         }
       } catch (error) {
         console.error('Failed to refresh products:', error);
@@ -171,9 +222,9 @@ const Index = () => {
         </div>
 
         {/* Product Search */}
-        {products.length > 0 && (
+        {searchableProducts.length > 0 && (
           <ProductSearch
-            products={products}
+            products={searchableProducts}
             onSearchResults={handleSearchResults}
           />
         )}
