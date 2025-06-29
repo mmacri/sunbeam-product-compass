@@ -22,7 +22,6 @@ export const AdminDashboard = ({ onViewProduct, onEditProduct, onDeleteProduct }
   const filteredAndSortedProducts = useMemo(() => {
     let products = [...mockProducts];
 
-    // Filter by search term
     if (searchTerm) {
       products = products.filter(product =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,12 +29,10 @@ export const AdminDashboard = ({ onViewProduct, onEditProduct, onDeleteProduct }
       );
     }
 
-    // Filter by category
     if (filterCategory !== 'all') {
       products = products.filter(product => product.category === filterCategory);
     }
 
-    // Sort products
     products.sort((a, b) => {
       switch (sortBy) {
         case 'title':

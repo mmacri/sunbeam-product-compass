@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Save, Eye, Code } from 'lucide-react';
+import { Save, Eye, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface TemplateEditorProps {
@@ -12,12 +12,12 @@ interface TemplateEditorProps {
 }
 
 export const TemplateEditor = ({ productData }: TemplateEditorProps) => {
-  const [template, setTemplate] = useState(() => {
-    return localStorage.getItem('sunbeam-template') || `# {{title}} Review
+  const [template, setTemplate] = useState(`# {{title}} Review
 
 **Current Price**: {{currentPrice}}
 **Original Price**: {{originalPrice}}
-**Rating**: ⭐ {{rating}}/5 ({{reviews}} reviews)
+**Rating**: {{rating}}/5 ({{reviews}} reviews)
+**Category**: {{category}}
 
 ## Product Overview
 {{description}}
@@ -32,139 +32,134 @@ export const TemplateEditor = ({ productData }: TemplateEditorProps) => {
 **{{@key}}**: {{this}}
 {{/each}}
 
-## Price History
-Current price represents excellent value. Monitor for future price drops.
-
 ## Where to Buy
-Available at multiple retailers for comparison shopping.`;
-  });
+{{#each stores}}
+- [{{name}}]({{url}})
+{{/each}}
 
-  const [previewMode, setPreviewMode] = useState(false);
+---
+
+*Last updated: {{timestamp}}*`);
+
+  const [preview, setPreview] = useState('');
   const { toast } = useToast();
 
+  const processTemplate = (templateStr: string, data: any) => {
+    if (!data) return 'No product data available for preview';
+
+    let processed = templateStr;
+    
+    // Simple variable replacement
+    processed = processed.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      return data[key] || match;
+    });
+
+    // Handle arrays (simplified Handlebars-like syntax)
+    processed = processed.replace(/\{\{#each (\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g, (match, arrayName, itemTemplate) => {
+      const array = data[arrayName];
+      if (!Array.isArray(array)) return '';
+      
+      return array.map(item => {
+        if (typeof item === 'string') {
+          return itemTemplate.replace(/\{\{this\}\}/g, item);
+        } else if (typeof item === 'object') {
+          let itemHtml = itemTemplate;
+          Object.keys(item).forEach(key => {
+            itemHtml = itemHtml.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), item[key]);
+          });
+          return itemHtml;
+        }
+        return '';
+      }).join('');
+    });
+
+    // Handle object iteration
+    processed = processed.replace(/\{\{#each (\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g, (match, objName, itemTemplate) => {
+      const obj = data[objName];
+      if (typeof obj !== 'object' || Array.isArray(obj)) return '';
+      
+      return Object.entries(obj).map(([key, value]) => {
+        return itemTemplate
+          .replace(/\{\{@key\}\}/g, key)
+          .replace(/\{\{this\}\}/g, value as string);
+      }).join('');
+    });
+
+    // Add timestamp
+    processed = processed.replace(/\{\{timestamp\}\}/g, new Date().toLocaleDateString());
+
+    return processed;
+  };
+
+  useEffect(() => {
+    setPreview(processTemplate(template, productData));
+  }, [template, productData]);
+
   const saveTemplate = () => {
-    localStorage.setItem('sunbeam-template', template);
+    localStorage.setItem('sunbeam-blog-template', template);
     toast({
       title: "Template Saved",
       description: "Your blog template has been saved successfully.",
     });
   };
 
-  const renderPreview = () => {
-    if (!productData) return template;
-
-    let rendered = template;
-    
-    // Simple template variable replacement
-    rendered = rendered.replace(/\{\{title\}\}/g, productData.title || 'Sample Product');
-    rendered = rendered.replace(/\{\{currentPrice\}\}/g, productData.currentPrice || '$299');
-    rendered = rendered.replace(/\{\{originalPrice\}\}/g, productData.originalPrice || '$399');
-    rendered = rendered.replace(/\{\{rating\}\}/g, productData.rating?.toString() || '4.5');
-    rendered = rendered.replace(/\{\{reviews\}\}/g, productData.reviews?.toString() || '1,234');
-    rendered = rendered.replace(/\{\{description\}\}/g, productData.description || 'High-quality product with excellent features.');
-
-    // Handle key features array
-    if (productData.keyFeatures) {
-      const featuresHtml = productData.keyFeatures.map((feature: string) => `- ${feature}`).join('\n');
-      rendered = rendered.replace(/\{\{#each keyFeatures\}\}[\s\S]*?\{\{\/each\}\}/g, featuresHtml);
+  const loadDefaultTemplate = () => {
+    const saved = localStorage.getItem('sunbeam-blog-template');
+    if (saved) {
+      setTemplate(saved);
     }
-
-    // Handle specs object
-    if (productData.specs) {
-      const specsHtml = Object.entries(productData.specs)
-        .map(([key, value]) => `**${key}**: ${value}`)
-        .join('\n');
-      rendered = rendered.replace(/\{\{#each specs\}\}[\s\S]*?\{\{\/each\}\}/g, specsHtml);
-    }
-
-    return rendered;
   };
 
-  const availableVariables = [
-    'title', 'currentPrice', 'originalPrice', 'rating', 'reviews', 
-    'description', 'keyFeatures', 'specs', 'category'
-  ];
+  useEffect(() => {
+    loadDefaultTemplate();
+  }, []);
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between dark:text-gray-100">
-            <div className="flex items-center space-x-2">
-              <Code className="w-5 h-5" />
-              <span>Template Editor</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPreviewMode(!previewMode)}
-                className="dark:border-gray-600 dark:text-gray-300"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {previewMode ? 'Edit' : 'Preview'}
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={saveTemplate}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-            </div>
+          <CardTitle className="flex items-center space-x-2 dark:text-gray-100">
+            <FileText className="w-5 h-5 text-blue-500" />
+            <span>Template Editor</span>
           </CardTitle>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">{{title}}</Badge>
+            <Badge variant="secondary">{{currentPrice}}</Badge>
+            <Badge variant="secondary">{{rating}}</Badge>
+            <Badge variant="secondary">{{category}}</Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm font-medium dark:text-gray-300">Available Variables:</span>
-              {availableVariables.map(variable => (
-                <Badge 
-                  key={variable}
-                  variant="secondary"
-                  className="cursor-pointer dark:bg-gray-600 dark:text-gray-200"
-                  onClick={() => setTemplate(prev => prev + `{{${variable}}}`)}
-                >
-                  {`{{${variable}}}`}
-                </Badge>
-              ))}
-            </div>
-            
-            {!previewMode ? (
-              <Textarea
-                value={template}
-                onChange={(e) => setTemplate(e.target.value)}
-                rows={20}
-                className="font-mono text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="Enter your blog template here..."
-              />
-            ) : (
-              <div className="border rounded-md p-4 min-h-96 dark:border-gray-600 dark:bg-gray-700">
-                <pre className="whitespace-pre-wrap text-sm dark:text-gray-200">
-                  {renderPreview()}
-                </pre>
-              </div>
-            )}
+        <CardContent className="space-y-4">
+          <Textarea
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+            placeholder="Enter your blog template using {{variable}} syntax..."
+            className="min-h-96 font-mono text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          />
+          <div className="flex space-x-2">
+            <Button onClick={saveTemplate} className="flex items-center space-x-2">
+              <Save className="w-4 h-4" />
+              <span>Save Template</span>
+            </Button>
+            <Button variant="outline" onClick={loadDefaultTemplate}>
+              Load Saved
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="dark:text-gray-100">Live Preview</CardTitle>
+          <CardTitle className="flex items-center space-x-2 dark:text-gray-100">
+            <Eye className="w-5 h-5 text-green-500" />
+            <span>Live Preview</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="prose dark:prose-invert max-w-none">
-            <div 
-              className="text-sm leading-relaxed dark:text-gray-200"
-              dangerouslySetInnerHTML={{
-                __html: renderPreview().replace(/\n/g, '<br/>')
-                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                  .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mb-4 dark:text-gray-100">$1</h1>')
-                  .replace(/^## (.*$)/gm, '<h2 class="text-xl font-semibold mb-3 mt-6 dark:text-gray-100">$1</h2>')
-              }}
-            />
+          <div className="min-h-96 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border dark:border-gray-600">
+            <pre className="whitespace-pre-wrap text-sm dark:text-gray-300 font-sans">
+              {preview}
+            </pre>
           </div>
         </CardContent>
       </Card>
