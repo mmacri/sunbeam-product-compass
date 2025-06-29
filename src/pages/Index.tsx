@@ -3,18 +3,65 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, TrendingDown, TrendingUp, Star } from 'lucide-react';
+import { ExternalLink, Star, Moon, Sun } from 'lucide-react';
 import { ProductSpecs } from '@/components/ProductSpecs';
-import { PriceHistory } from '@/components/PriceHistory';
+import { InteractivePriceChart } from '@/components/InteractivePriceChart';
 import { mockProducts } from '@/utils/mockData';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Index = () => {
   const [products, setProducts] = useState(mockProducts);
+  const [staleDataWarning, setStaleDataWarning] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    // Check for stale data (simulate 24h cache expiry)
+    const lastUpdate = localStorage.getItem('sunbeam-last-update');
+    const now = new Date().getTime();
+    const oneDay = 24 * 60 * 60 * 1000;
+    
+    if (lastUpdate && (now - parseInt(lastUpdate)) > oneDay) {
+      setStaleDataWarning(true);
+    }
+
+    // Set initial update time if not exists
+    if (!lastUpdate) {
+      localStorage.setItem('sunbeam-last-update', now.toString());
+    }
+  }, []);
+
+  const refreshData = () => {
+    setStaleDataWarning(false);
+    localStorage.setItem('sunbeam-last-update', new Date().getTime().toString());
+    // In real app, this would trigger API calls to refresh product data
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+      {/* Stale Data Warning */}
+      {staleDataWarning && (
+        <div className="bg-yellow-100 dark:bg-yellow-900 border-b border-yellow-200 dark:border-yellow-800 px-6 py-3">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-yellow-800 dark:text-yellow-200">⚠️</span>
+              <span className="text-yellow-800 dark:text-yellow-200 text-sm">
+                Product data is over 24 hours old. Consider refreshing for latest information.
+              </span>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={refreshData}
+              className="border-yellow-300 text-yellow-800 hover:bg-yellow-200 dark:border-yellow-700 dark:text-yellow-200 dark:hover:bg-yellow-800"
+            >
+              Refresh Data
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-200 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-orange-200 dark:border-gray-700 sticky top-0 z-50 transition-colors duration-300">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -25,9 +72,19 @@ const Index = () => {
                 Sunbeam Reviews
               </h1>
             </div>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
-              Product Reviews & Price Tracking
-            </Badge>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleTheme}
+                className="dark:text-gray-300"
+              >
+                {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              </Button>
+              <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-800">
+                Product Reviews & Price Tracking
+              </Badge>
+            </div>
           </div>
         </div>
       </header>
@@ -35,10 +92,10 @@ const Index = () => {
       <main className="container mx-auto px-6 py-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Smart Product Reviews & Price Tracking
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             Get detailed product comparisons, live price tracking, and expert reviews 
             all in one place. Make informed buying decisions with our comprehensive analysis.
           </p>
@@ -47,7 +104,7 @@ const Index = () => {
         {/* Featured Products */}
         <div className="grid gap-8 md:gap-12">
           {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card key={product.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700">
               <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -70,7 +127,6 @@ const Index = () => {
                     {product.originalPrice !== product.currentPrice && (
                       <div className="flex items-center text-yellow-200">
                         <span className="line-through text-sm mr-2">{product.originalPrice}</span>
-                        <TrendingDown className="w-4 h-4" />
                       </div>
                     )}
                   </div>
@@ -81,17 +137,17 @@ const Index = () => {
                 <div className="grid lg:grid-cols-2 gap-8">
                   {/* Product Description */}
                   <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-900">Product Overview</h3>
-                    <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Product Overview</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">{product.description}</p>
                     
                     {/* Key Features */}
                     <div className="mb-6">
-                      <h4 className="font-semibold mb-3 text-gray-900">Key Features</h4>
+                      <h4 className="font-semibold mb-3 text-gray-900 dark:text-gray-100">Key Features</h4>
                       <ul className="space-y-2">
                         {product.keyFeatures.map((feature, index) => (
                           <li key={index} className="flex items-start">
                             <span className="w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            <span className="text-gray-600">{feature}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -103,7 +159,7 @@ const Index = () => {
                         <Button 
                           key={store.name}
                           variant="outline" 
-                          className="flex items-center space-x-2 hover:bg-orange-50 hover:border-orange-300"
+                          className="flex items-center space-x-2 hover:bg-orange-50 hover:border-orange-300 dark:hover:bg-orange-900/20 dark:border-gray-600 dark:text-gray-300"
                           onClick={() => window.open(store.url, '_blank')}
                         >
                           <span>Buy on {store.name}</span>
@@ -116,7 +172,10 @@ const Index = () => {
                   {/* Specs and Price History */}
                   <div className="space-y-6">
                     <ProductSpecs specs={product.specs} />
-                    <PriceHistory priceHistory={product.priceHistory} />
+                    <InteractivePriceChart 
+                      priceHistory={product.priceHistory} 
+                      title={product.title}
+                    />
                   </div>
                 </div>
               </CardContent>
