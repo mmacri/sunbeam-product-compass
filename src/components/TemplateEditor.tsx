@@ -123,10 +123,10 @@ export const TemplateEditor = ({ productData }: TemplateEditorProps) => {
             <span>Template Editor</span>
           </CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{{title}}</Badge>
-            <Badge variant="secondary">{{currentPrice}}</Badge>
-            <Badge variant="secondary">{{rating}}</Badge>
-            <Badge variant="secondary">{{category}}</Badge>
+            <Badge variant="secondary">{"{{title}}"}</Badge>
+            <Badge variant="secondary">{"{{currentPrice}}"}</Badge>
+            <Badge variant="secondary">{"{{rating}}"}</Badge>
+            <Badge variant="secondary">{"{{category}}"}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
