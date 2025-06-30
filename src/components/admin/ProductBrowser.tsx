@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ExcelService } from '@/services/excelService';
 import { RapidApiProduct } from '@/types/rapidApi';
 import { ProductSelectionService } from '@/services/productSelection';
 import { useRapidApiProducts } from '@/hooks/useRapidApiProducts';
+import { RapidApiService } from '@/services/rapidApi';
 import { ProductBrowserHeader } from './ProductBrowserHeader';
 import { ProductBrowserControls } from './ProductBrowserControls';
 import { ProductBrowserActions } from './ProductBrowserActions';
@@ -25,6 +25,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [selectedAsins, setSelectedAsins] = useState<string[]>([]);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const { isLoadingRapidApi, loadProductsFromRapidApi } = useRapidApiProducts();
 
   useEffect(() => {
@@ -57,14 +58,48 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       if (rapidProducts.length > 0) {
         setProducts(rapidProducts);
         localStorage.setItem('sunbeam-products', JSON.stringify(rapidProducts));
-        onShowMessage(`Loaded ${rapidProducts.length} products from RapidAPI`);
-        onLogAction('load_rapidapi_products', { count: rapidProducts.length });
+        onShowMessage(`Loaded ${rapidProducts.length} best seller products from RapidAPI`);
+        onLogAction('load_rapidapi_products', { count: rapidProducts.length, type: 'best_sellers' });
       } else {
         onShowMessage('No products found. Please check your RapidAPI configuration.', 'error');
       }
     } catch (error) {
       onShowMessage('Failed to load products from RapidAPI. Please check your API key.', 'error');
       onLogAction('load_rapidapi_error', { error: error.message || 'Unknown error' });
+    }
+  };
+
+  const handleSearchProducts = async (query: string) => {
+    const rapidApiKey = localStorage.getItem('rapidapi-key');
+    if (!rapidApiKey) {
+      onShowMessage('RapidAPI key not configured. Please set it in Settings.', 'error');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      RapidApiService.setApiKey(rapidApiKey);
+      const searchResults = await RapidApiService.searchProducts(query, {
+        sortBy: 'BEST_SELLERS',
+        country: 'US',
+        page: 1
+      });
+
+      if (searchResults.products && searchResults.products.length > 0) {
+        const searchedProducts = searchResults.products.slice(0, 20); // Limit to 20 results
+        setProducts(searchedProducts);
+        localStorage.setItem('sunbeam-products', JSON.stringify(searchedProducts));
+        onShowMessage(`Found ${searchedProducts.length} products for "${query}"`);
+        onLogAction('search_rapidapi_products', { query, count: searchedProducts.length });
+      } else {
+        onShowMessage(`No products found for "${query}". Try a different search term.`, 'error');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      onShowMessage('Failed to search products. Please check your API key and try again.', 'error');
+      onLogAction('search_rapidapi_error', { query, error: error.message || 'Unknown error' });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -198,7 +233,9 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     <div className="space-y-6">
       <ProductBrowserHeader
         onLoadFromRapidApi={handleLoadFromRapidApi}
+        onSearchProducts={handleSearchProducts}
         isLoadingRapidApi={isLoadingRapidApi}
+        isSearching={isSearching}
         productCount={products.length}
       />
 
