@@ -1,4 +1,3 @@
-
 export interface RapidApiProduct {
   asin: string;
   product_title: string;
@@ -6,7 +5,9 @@ export interface RapidApiProduct {
   unit_price: string;
   unit_count: number;
   product_original_price?: string;
+  product_price_max?: string;
   currency: string;
+  country?: string;
   product_star_rating: string;
   product_num_ratings: number;
   product_url: string;
@@ -24,6 +25,13 @@ export interface RapidApiProduct {
   coupon_text?: string;
   product_badge?: string;
   product_availability?: string;
+  product_description?: string;
+  about_product?: string[];
+  customers_say?: string;
+  product_slug?: string;
+  standing_screen_display_size?: string;
+  memory_storage_capacity?: string;
+  ram_memory_installed_size?: string;
 }
 
 export interface RapidApiSearchResponse {
