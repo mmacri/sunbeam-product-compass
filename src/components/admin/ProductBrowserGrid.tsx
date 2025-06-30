@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, Prime, Award, Leaf } from 'lucide-react';
+import { Star, Zap, Award, Leaf } from 'lucide-react';
 import { RapidApiProduct } from '@/types/rapidApi';
 
 interface ProductBrowserGridProps {
@@ -101,7 +101,7 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                   )}
                   {product.is_prime && (
                     <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                      <Prime className="w-3 h-3 mr-1" />
+                      <Zap className="w-3 h-3 mr-1" />
                       Prime
                     </Badge>
                   )}
