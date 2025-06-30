@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Settings, Key, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { RainforestApiService } from '@/services/rainforestApi';
+import { RapidApiService } from '@/services/rapidApi';
 
 interface ApiConfigurationProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -18,42 +18,42 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
   onShowMessage,
   onLogAction
 }) => {
-  const [rainforestApiKey, setRainforestApiKey] = useState('');
-  const [isRainforestEnabled, setIsRainforestEnabled] = useState(false);
+  const [rapidApiKey, setRapidApiKey] = useState('');
+  const [isRapidApiEnabled, setIsRapidApiEnabled] = useState(false);
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
   useEffect(() => {
     // Load saved configuration
-    const savedKey = localStorage.getItem('rainforest-api-key');
-    const savedEnabled = localStorage.getItem('rainforest-enabled') === 'true';
+    const savedKey = localStorage.getItem('rapidapi-key');
+    const savedEnabled = localStorage.getItem('rapidapi-enabled') === 'true';
     
     if (savedKey) {
-      setRainforestApiKey(savedKey);
-      setIsRainforestEnabled(savedEnabled);
+      setRapidApiKey(savedKey);
+      setIsRapidApiEnabled(savedEnabled);
       
       if (savedEnabled) {
-        RainforestApiService.setApiKey(savedKey);
+        RapidApiService.setApiKey(savedKey);
       }
     }
   }, []);
 
   const handleSaveConfiguration = () => {
-    if (isRainforestEnabled && !rainforestApiKey.trim()) {
-      onShowMessage('Please enter a valid Rainforest API key', 'error');
+    if (isRapidApiEnabled && !rapidApiKey.trim()) {
+      onShowMessage('Please enter a valid RapidAPI key', 'error');
       return;
     }
 
-    localStorage.setItem('rainforest-api-key', rainforestApiKey);
-    localStorage.setItem('rainforest-enabled', isRainforestEnabled.toString());
+    localStorage.setItem('rapidapi-key', rapidApiKey);
+    localStorage.setItem('rapidapi-enabled', isRapidApiEnabled.toString());
 
-    if (isRainforestEnabled) {
-      RainforestApiService.setApiKey(rainforestApiKey);
+    if (isRapidApiEnabled) {
+      RapidApiService.setApiKey(rapidApiKey);
     }
 
     onLogAction('API Configuration Updated', {
-      rainforestEnabled: isRainforestEnabled,
-      hasApiKey: !!rainforestApiKey.trim()
+      rapidApiEnabled: isRapidApiEnabled,
+      hasApiKey: !!rapidApiKey.trim()
     });
 
     onShowMessage('API configuration saved successfully');
@@ -61,7 +61,7 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
   };
 
   const handleTestApi = async () => {
-    if (!rainforestApiKey.trim()) {
+    if (!rapidApiKey.trim()) {
       onShowMessage('Please enter an API key first', 'error');
       return;
     }
@@ -70,18 +70,26 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
     setTestResult(null);
 
     try {
-      // Test with a sample Amazon product URL
-      const testUrl = 'https://www.amazon.com/dp/B08N5WRWNW';
-      RainforestApiService.setApiKey(rainforestApiKey);
+      // Test with a sample search query
+      const testQuery = 'massage gun';
+      RapidApiService.setApiKey(rapidApiKey);
       
-      const result = await RainforestApiService.extractProductData(testUrl);
+      const result = await RapidApiService.searchProducts(testQuery, {
+        country: 'US',
+        sortBy: 'BEST_SELLERS',
+        page: 1
+      });
       
-      if (result && result.title) {
+      if (result && result.status === 'OK' && result.products && result.products.length > 0) {
         setTestResult('success');
-        onShowMessage('API test successful! Enhanced data extraction is working.');
-        onLogAction('API Test Successful', { testUrl, resultTitle: result.title });
+        onShowMessage(`API test successful! Found ${result.total_products} products for "${testQuery}".`);
+        onLogAction('API Test Successful', { 
+          testQuery, 
+          totalProducts: result.total_products,
+          sampleProduct: result.products[0]?.product_title 
+        });
       } else {
-        throw new Error('Invalid response from API');
+        throw new Error('Invalid response from API or no products found');
       }
     } catch (error) {
       setTestResult('error');
@@ -93,11 +101,11 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
   };
 
   const handleToggleEnabled = (enabled: boolean) => {
-    setIsRainforestEnabled(enabled);
+    setIsRapidApiEnabled(enabled);
     setTestResult(null);
     if (!enabled) {
       // Clear API key when disabling
-      RainforestApiService.setApiKey('');
+      RapidApiService.setApiKey('');
     }
   };
 
@@ -113,22 +121,22 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Rainforest API Configuration */}
+        {/* RapidAPI Configuration */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label className="text-base font-medium dark:text-gray-200">Rainforest API</Label>
+              <Label className="text-base font-medium dark:text-gray-200">RapidAPI - Amazon Data Scraper</Label>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Enhanced Amazon product data extraction with rich metadata
+                Enhanced Amazon product search and data extraction with rich metadata
               </p>
             </div>
             <div className="flex items-center space-x-2">
               <Switch
-                checked={isRainforestEnabled}
+                checked={isRapidApiEnabled}
                 onCheckedChange={handleToggleEnabled}
               />
-              <Badge variant={isRainforestEnabled ? 'default' : 'secondary'}>
-                {isRainforestEnabled ? (
+              <Badge variant={isRapidApiEnabled ? 'default' : 'secondary'}>
+                {isRapidApiEnabled ? (
                   <>
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Enabled
@@ -143,26 +151,26 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
             </div>
           </div>
 
-          {isRainforestEnabled && (
+          {isRapidApiEnabled && (
             <div className="space-y-3">
               <div>
-                <Label htmlFor="rainforest-api-key" className="dark:text-gray-200">API Key</Label>
+                <Label htmlFor="rapidapi-key" className="dark:text-gray-200">API Key</Label>
                 <div className="flex gap-2 mt-1">
                   <div className="relative flex-1">
                     <Key className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      id="rainforest-api-key"
+                      id="rapidapi-key"
                       type="password"
-                      placeholder="Enter your Rainforest API key"
-                      value={rainforestApiKey}
-                      onChange={(e) => setRainforestApiKey(e.target.value)}
+                      placeholder="Enter your RapidAPI key"
+                      value={rapidApiKey}
+                      onChange={(e) => setRapidApiKey(e.target.value)}
                       className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                     />
                   </div>
                   <Button
                     variant="outline"
                     onClick={handleTestApi}
-                    disabled={isTestingApi || !rainforestApiKey.trim()}
+                    disabled={isTestingApi || !rapidApiKey.trim()}
                     className="dark:border-gray-600 dark:text-gray-300"
                   >
                     {isTestingApi ? 'Testing...' : 'Test'}
@@ -185,8 +193,9 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
               </div>
               
               <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                <p>• Get your API key from <a href="https://rainforestapi.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">rainforestapi.com</a></p>
-                <p>• Enhanced data includes categories, specifications, ratings, and metadata</p>
+                <p>• Get your API key from <a href="https://rapidapi.com/dataforseo/api/amazon-data-scraper" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">RapidAPI Amazon Data Scraper</a></p>
+                <p>• Enhanced data includes product details, ratings, pricing, and availability</p>
+                <p>• Supports product search, categories, details, reviews, and offers</p>
                 <p>• Falls back to web scraping if API fails or is unavailable</p>
               </div>
             </div>

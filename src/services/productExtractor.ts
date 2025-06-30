@@ -1,4 +1,4 @@
-import { RainforestApiService } from './rainforestApi';
+import { RapidApiService } from './rapidApi';
 
 interface ProductData {
   title: string;
@@ -21,18 +21,18 @@ interface ProductData {
 }
 
 export class ProductExtractor {
-  private static useRainforestApi: boolean = false;
-  private static rainforestApiKey: string = '';
+  private static useRapidApi: boolean = false;
+  private static rapidApiKey: string = '';
 
-  static configureRainforestApi(apiKey: string) {
-    this.rainforestApiKey = apiKey;
-    this.useRainforestApi = true;
-    RainforestApiService.setApiKey(apiKey);
+  static configureRapidApi(apiKey: string) {
+    this.rapidApiKey = apiKey;
+    this.useRapidApi = true;
+    RapidApiService.setApiKey(apiKey);
   }
 
-  static disableRainforestApi() {
-    this.useRainforestApi = false;
-    this.rainforestApiKey = '';
+  static disableRapidApi() {
+    this.useRapidApi = false;
+    this.rapidApiKey = '';
   }
 
   public static async extractFromUrl(url: string): Promise<ProductData> {
@@ -42,14 +42,14 @@ export class ProductExtractor {
 
     console.log('Extracting product data from:', url);
 
-    // Try Rainforest API first if configured and URL is Amazon
-    if (this.useRainforestApi && this.rainforestApiKey && url.includes('amazon')) {
+    // Try RapidAPI first if configured and URL is Amazon
+    if (this.useRapidApi && this.rapidApiKey && url.includes('amazon')) {
       try {
-        console.log('Using Rainforest API for enhanced data extraction');
-        return await RainforestApiService.extractProductData(url);
+        console.log('Using RapidAPI for enhanced data extraction');
+        return await RapidApiService.extractProductData(url);
       } catch (error) {
-        console.warn('Rainforest API failed, falling back to web scraping:', error);
-        // Fall back to web scraping if Rainforest API fails
+        console.warn('RapidAPI failed, falling back to web scraping:', error);
+        // Fall back to web scraping if RapidAPI fails
       }
     }
 
@@ -347,5 +347,4 @@ export class ProductExtractor {
       store: ['Amazon', 'Walmart', 'eBay', 'Target', 'Best Buy'][index]
     }));
   }
-
 }
