@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, Upload, Columns, Save } from 'lucide-react';
+import { Search, Download, Upload, Columns, Save, RefreshCw, Plus } from 'lucide-react';
 import { ExcelService } from '@/services/excelService';
 import { RapidApiProduct } from '@/types/rapidApi';
 import { ProductSelectionService } from '@/services/productSelection';
 import { ColumnSelector } from './ColumnSelector';
+import { useRapidApiProducts } from '@/hooks/useRapidApiProducts';
 
 interface ProductBrowserProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -25,6 +26,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [selectedAsins, setSelectedAsins] = useState<string[]>([]);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const { isLoadingRapidApi, loadProductsFromRapidApi } = useRapidApiProducts();
 
   useEffect(() => {
     loadProducts();
@@ -48,6 +50,23 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const loadSelectedAsins = () => {
     const selected = ProductSelectionService.getSelectedAsins();
     setSelectedAsins(selected);
+  };
+
+  const handleLoadFromRapidApi = async () => {
+    try {
+      const rapidProducts = await loadProductsFromRapidApi();
+      if (rapidProducts.length > 0) {
+        setProducts(rapidProducts);
+        localStorage.setItem('sunbeam-products', JSON.stringify(rapidProducts));
+        onShowMessage(`Loaded ${rapidProducts.length} products from RapidAPI`);
+        onLogAction('load_rapidapi_products', { count: rapidProducts.length });
+      } else {
+        onShowMessage('No products found. Please check your RapidAPI configuration.', 'error');
+      }
+    } catch (error) {
+      onShowMessage('Failed to load products from RapidAPI. Please check your API key.', 'error');
+      onLogAction('load_rapidapi_error', { error: error.message || 'Unknown error' });
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -183,6 +202,31 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* API Loading Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Load Products from RapidAPI
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={handleLoadFromRapidApi}
+              disabled={isLoadingRapidApi}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingRapidApi ? 'animate-spin' : ''}`} />
+              {isLoadingRapidApi ? 'Loading...' : 'Load Products from API'}
+            </Button>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Current products: {products.length}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Search and Controls */}
       <Card>
         <CardHeader>
