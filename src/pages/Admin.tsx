@@ -106,6 +106,59 @@ const Admin = () => {
     });
   };
 
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <UnifiedProductWorkflow
+            products={products}
+            onProductsChange={saveProducts}
+            onLogAction={logAction}
+          />
+        );
+      case 'url-processor':
+        return (
+          <ProductManagement
+            products={products}
+            onProductsChange={saveProducts}
+            onEditProduct={handleEditProduct}
+            onDeleteProduct={handleDeleteProduct}
+            onShowMessage={showMessage}
+            onLogAction={logAction}
+          />
+        );
+      case 'browser':
+        return (
+          <ProductBrowser
+            onShowMessage={showMessage}
+            onLogAction={logAction}
+            onAddProduct={handleAddProductFromBrowser}
+          />
+        );
+      case 'template':
+        return <TemplateEditor />;
+      case 'reports':
+        return <ReportingDashboard />;
+      case 'audit':
+        return <AuditLog />;
+      case 'settings':
+        return (
+          <AdminSettings
+            onShowMessage={showMessage}
+            onLogAction={logAction}
+          />
+        );
+      default:
+        return (
+          <UnifiedProductWorkflow
+            products={products}
+            onProductsChange={saveProducts}
+            onLogAction={logAction}
+          />
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <AdminHeader />
@@ -118,53 +171,9 @@ const Admin = () => {
       />
 
       <main className="container mx-auto px-6 py-8 max-w-7xl">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsContent value="dashboard" className="space-y-6">
-            <UnifiedProductWorkflow
-              products={products}
-              onProductsChange={saveProducts}
-              onLogAction={logAction}
-            />
-          </TabsContent>
-
-          <TabsContent value="url-processor" className="space-y-6">
-            <ProductManagement
-              products={products}
-              onProductsChange={saveProducts}
-              onEditProduct={handleEditProduct}
-              onDeleteProduct={handleDeleteProduct}
-              onShowMessage={showMessage}
-              onLogAction={logAction}
-            />
-          </TabsContent>
-
-          <TabsContent value="browser" className="space-y-6">
-            <ProductBrowser
-              onShowMessage={showMessage}
-              onLogAction={logAction}
-              onAddProduct={handleAddProductFromBrowser}
-            />
-          </TabsContent>
-
-          <TabsContent value="template" className="space-y-6">
-            <TemplateEditor />
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-6">
-            <ReportingDashboard />
-          </TabsContent>
-
-          <TabsContent value="audit" className="space-y-6">
-            <AuditLog />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <AdminSettings
-              onShowMessage={showMessage}
-              onLogAction={logAction}
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-6">
+          {renderActiveTabContent()}
+        </div>
       </main>
     </div>
   );
