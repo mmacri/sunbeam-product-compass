@@ -14,6 +14,10 @@ interface ProductGridCardProps {
 export const ProductGridCard: React.FC<ProductGridCardProps> = ({ product, onProductClick }) => {
   const formatPrice = (price: string) => price || 'N/A';
 
+  const getAffiliateUrl = (asin: string) => {
+    return `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
+  };
+
   const formatRating = (rating: string, numRatings: number) => (
     <div className="flex items-center gap-1">
       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -107,7 +111,7 @@ export const ProductGridCard: React.FC<ProductGridCardProps> = ({ product, onPro
             className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
             onClick={(e) => {
               e.stopPropagation();
-              window.open(product.product_url, '_blank');
+              window.open(getAffiliateUrl(product.asin), '_blank');
             }}
           >
             <ShoppingCart className="w-4 h-4 mr-1" />

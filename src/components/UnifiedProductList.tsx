@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,10 @@ export const UnifiedProductList: React.FC<UnifiedProductListProps> = ({
   const [filterCategory, setFilterCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  const getAffiliateUrl = (asin: string) => {
+    return `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
+  };
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products;
@@ -167,7 +170,7 @@ export const UnifiedProductList: React.FC<UnifiedProductListProps> = ({
             <div className="flex gap-3 pt-2">
               <Button
                 className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                onClick={() => window.open(product.product_url, '_blank')}
+                onClick={() => window.open(getAffiliateUrl(product.asin), '_blank')}
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 Buy Now
@@ -181,7 +184,7 @@ export const UnifiedProductList: React.FC<UnifiedProductListProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.open(product.product_url, '_blank')}
+                onClick={() => window.open(getAffiliateUrl(product.asin), '_blank')}
               >
                 <ExternalLink className="w-4 h-4" />
               </Button>
@@ -342,7 +345,7 @@ export const UnifiedProductList: React.FC<UnifiedProductListProps> = ({
                       className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open(product.product_url, '_blank');
+                        window.open(getAffiliateUrl(product.asin), '_blank');
                       }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1" />
