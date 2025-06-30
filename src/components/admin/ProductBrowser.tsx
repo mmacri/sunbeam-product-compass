@@ -86,7 +86,8 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       });
 
       if (searchResults.products && searchResults.products.length > 0) {
-        const searchedProducts = searchResults.products.slice(0, 20); // Limit to 20 results
+        // Remove the artificial limit - show all products returned by API
+        const searchedProducts = searchResults.products;
         setProducts(searchedProducts);
         localStorage.setItem('sunbeam-products', JSON.stringify(searchedProducts));
         onShowMessage(`Found ${searchedProducts.length} products for "${query}"`);

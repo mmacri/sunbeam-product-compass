@@ -19,7 +19,8 @@ export const useRapidApiProducts = () => {
       });
 
       if (searchResults.products && searchResults.products.length > 0) {
-        return searchResults.products.slice(0, 10);
+        // Return all products instead of limiting to 10
+        return searchResults.products;
       }
     } catch (error) {
       console.error('Failed to load products from RapidAPI:', error);

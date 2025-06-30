@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, Zap, Award, Leaf } from 'lucide-react';
+import { Star, Zap, Award, Leaf, Package, Truck, DollarSign } from 'lucide-react';
 import { RapidApiProduct } from '@/types/rapidApi';
 
 interface ProductBrowserGridProps {
@@ -31,6 +31,11 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
     );
   }
 
+  const formatPrice = (price: string) => {
+    if (!price) return 'Price not available';
+    return price.startsWith('$') ? price : `$${price}`;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => (
@@ -58,7 +63,7 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                   <img 
                     src={product.product_photo} 
                     alt={product.product_title || 'Product image'}
-                    className="w-16 h-16 object-cover rounded mb-3 float-right ml-3"
+                    className="w-20 h-20 object-cover rounded mb-3 float-right ml-3"
                   />
                 )}
                 
@@ -66,17 +71,37 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                   {product.product_title || 'Untitled Product'}
                 </h3>
                 
+                {/* Price Information */}
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-green-600">
-                    {product.product_price || 'Price not available'}
+                    {formatPrice(product.product_price)}
                   </span>
                   {product.product_original_price && product.product_original_price !== product.product_price && (
                     <span className="text-sm text-gray-500 line-through">
-                      {product.product_original_price}
+                      {formatPrice(product.product_original_price)}
                     </span>
                   )}
                 </div>
 
+                {/* Unit Price and Count */}
+                {(product.unit_price || product.unit_count) && (
+                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
+                    {product.unit_price && (
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="w-3 h-3" />
+                        {product.unit_price}
+                      </span>
+                    )}
+                    {product.unit_count && (
+                      <span className="flex items-center gap-1">
+                        <Package className="w-3 h-3" />
+                        {product.unit_count} units
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Rating and Reviews */}
                 {product.product_star_rating && (
                   <div className="flex items-center gap-1 mb-2">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -87,6 +112,14 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                   </div>
                 )}
 
+                {/* Sales Volume */}
+                {product.sales_volume && (
+                  <div className="text-xs text-blue-600 mb-2">
+                    Sales: {product.sales_volume}
+                  </div>
+                )}
+
+                {/* Badges */}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {product.is_best_seller && (
                     <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
@@ -113,14 +146,73 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                   )}
                 </div>
 
-                {product.coupon_text && (
-                  <div className="text-xs text-green-600 font-medium">
-                    {product.coupon_text}
+                {/* Offers and Availability */}
+                <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+                  {product.product_num_offers && (
+                    <div className="text-gray-600">
+                      <strong>{product.product_num_offers}</strong> offers
+                    </div>
+                  )}
+                  {product.product_minimum_offer_price && (
+                    <div className="text-gray-600">
+                      From {formatPrice(product.product_minimum_offer_price)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Availability */}
+                {product.product_availability && (
+                  <div className="text-xs text-gray-600 mb-2">
+                    <strong>Availability:</strong> {product.product_availability}
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500 mt-2">
-                  ASIN: {product.asin || 'N/A'}
+                {/* Delivery Information */}
+                {product.delivery && (
+                  <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                    <Truck className="w-3 h-3" />
+                    {product.delivery}
+                  </div>
+                )}
+
+                {/* Byline/Brand */}
+                {product.product_byline && (
+                  <div className="text-xs text-gray-600 mb-2">
+                    <strong>Brand:</strong> {product.product_byline}
+                  </div>
+                )}
+
+                {/* Coupon */}
+                {product.coupon_text && (
+                  <div className="text-xs text-green-600 font-medium mb-2">
+                    🎟️ {product.coupon_text}
+                  </div>
+                )}
+
+                {/* Product Badge */}
+                {product.product_badge && (
+                  <Badge variant="outline" className="text-xs mb-2">
+                    {product.product_badge}
+                  </Badge>
+                )}
+
+                {/* Currency */}
+                {product.currency && product.currency !== 'USD' && (
+                  <div className="text-xs text-gray-500 mb-2">
+                    Currency: {product.currency}
+                  </div>
+                )}
+
+                {/* Variations */}
+                {product.has_variations && (
+                  <div className="text-xs text-blue-600 mb-2">
+                    ✨ Has variations available
+                  </div>
+                )}
+
+                {/* ASIN */}
+                <div className="text-xs text-gray-500 mt-2 pt-2 border-t">
+                  <strong>ASIN:</strong> {product.asin || 'N/A'}
                 </div>
               </div>
             </div>
