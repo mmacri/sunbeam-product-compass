@@ -22,6 +22,7 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
   const [isRapidApiEnabled, setIsRapidApiEnabled] = useState(false);
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [testError, setTestError] = useState<string>('');
 
   useEffect(() => {
     // Load saved configuration
@@ -58,6 +59,7 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
 
     onShowMessage('API configuration saved successfully');
     setTestResult(null);
+    setTestError('');
   };
 
   const handleTestApi = async () => {
@@ -68,33 +70,45 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
 
     setIsTestingApi(true);
     setTestResult(null);
+    setTestError('');
 
     try {
-      // Test with a sample search query
+      console.log('Testing API with key:', `${rapidApiKey.substring(0, 10)}...`);
+      
+      // Test with a simple search query that matches the curl example
       const testQuery = 'massage gun';
       RapidApiService.setApiKey(rapidApiKey);
       
       const result = await RapidApiService.searchProducts(testQuery, {
         country: 'US',
         sortBy: 'BEST_SELLERS',
-        page: 1
+        condition: 'NEW',
+        page: 1,
+        isPrime: false,
+        fourStarsAndUp: true
       });
       
-      if (result && result.status === 'OK' && result.products && result.products.length > 0) {
+      console.log('API test result:', result);
+      
+      if (result && (result.status === 'OK' || result.products)) {
+        const productCount = result.total_products || result.products?.length || 0;
         setTestResult('success');
-        onShowMessage(`API test successful! Found ${result.total_products} products for "${testQuery}".`);
+        onShowMessage(`API test successful! Found ${productCount} products for "${testQuery}".`);
         onLogAction('API Test Successful', { 
           testQuery, 
-          totalProducts: result.total_products,
-          sampleProduct: result.products[0]?.product_title 
+          totalProducts: productCount,
+          sampleProduct: result.products?.[0]?.product_title || 'No products found'
         });
       } else {
-        throw new Error('Invalid response from API or no products found');
+        throw new Error('Invalid response format or no data returned');
       }
     } catch (error) {
+      console.error('API test failed:', error);
+      const errorMessage = error.message || 'Unknown error occurred';
       setTestResult('error');
-      onShowMessage(`API test failed: ${error.message}`, 'error');
-      onLogAction('API Test Failed', { error: error.message });
+      setTestError(errorMessage);
+      onShowMessage(`API test failed: ${errorMessage}`, 'error');
+      onLogAction('API Test Failed', { error: errorMessage });
     } finally {
       setIsTestingApi(false);
     }
@@ -103,6 +117,7 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
   const handleToggleEnabled = (enabled: boolean) => {
     setIsRapidApiEnabled(enabled);
     setTestResult(null);
+    setTestError('');
     if (!enabled) {
       // Clear API key when disabling
       RapidApiService.setApiKey('');
@@ -187,15 +202,15 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
                     ) : (
                       <AlertCircle className="w-4 h-4" />
                     )}
-                    {testResult === 'success' ? 'API connection successful' : 'API test failed'}
+                    {testResult === 'success' ? 'API connection successful' : `API test failed: ${testError}`}
                   </div>
                 )}
               </div>
               
               <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                 <p>• Get your API key from <a href="https://rapidapi.com/dataforseo/api/amazon-data-scraper" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">RapidAPI Amazon Data Scraper</a></p>
+                <p>• Make sure you're subscribed to the API (check your RapidAPI dashboard)</p>
                 <p>• Enhanced data includes product details, ratings, pricing, and availability</p>
-                <p>• Supports product search, categories, details, reviews, and offers</p>
                 <p>• Falls back to web scraping if API fails or is unavailable</p>
               </div>
             </div>
