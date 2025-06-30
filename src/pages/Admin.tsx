@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { AdminHeader } from '@/components/AdminHeader';
 import { AdminNavigation } from '@/components/admin/AdminNavigation';
 import { UnifiedProductWorkflow } from '@/components/admin/UnifiedProductWorkflow';
 import { ProductManagement } from '@/components/admin/ProductManagement';
+import { ProductBrowser } from '@/components/admin/ProductBrowser';
 import { TemplateEditor } from '@/components/TemplateEditor';
 import { ReportingDashboard } from '@/components/ReportingDashboard';
 import { AuditLog } from '@/components/AuditLog';
@@ -87,6 +87,25 @@ const Admin = () => {
     }
   };
 
+  const handleAddProductFromBrowser = (rapidApiProduct: any) => {
+    const newProduct: Product = {
+      id: Date.now().toString(),
+      title: rapidApiProduct.product_title,
+      url: rapidApiProduct.product_url,
+      threshold: 0, // User can set this later
+      tags: [],
+      price: rapidApiProduct.product_price,
+      lastUpdated: new Date().toISOString()
+    };
+
+    const updatedProducts = [...products, newProduct];
+    saveProducts(updatedProducts);
+    logAction('Product Added from Browser', { 
+      asin: rapidApiProduct.asin, 
+      title: rapidApiProduct.product_title 
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <AdminHeader />
@@ -116,6 +135,14 @@ const Admin = () => {
               onDeleteProduct={handleDeleteProduct}
               onShowMessage={showMessage}
               onLogAction={logAction}
+            />
+          </TabsContent>
+
+          <TabsContent value="browser" className="space-y-6">
+            <ProductBrowser
+              onShowMessage={showMessage}
+              onLogAction={logAction}
+              onAddProduct={handleAddProductFromBrowser}
             />
           </TabsContent>
 
