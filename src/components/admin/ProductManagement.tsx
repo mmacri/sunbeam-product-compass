@@ -30,6 +30,22 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
   onShowMessage,
   onLogAction
 }) => {
+  const handleEdit = (product: Product) => {
+    onEditProduct(product.id);
+  };
+
+  const handleDelete = (id: string) => {
+    onDeleteProduct(id);
+  };
+
+  const handleAdd = () => {
+    onShowMessage('Add product form is above', 'success');
+  };
+
+  const handleView = (id: string) => {
+    onShowMessage(`Viewing product: ${id}`, 'success');
+  };
+
   return (
     <div className="space-y-6">
       <AddProductForm
@@ -41,11 +57,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({
       
       <ProductList
         products={products}
-        onProductsChange={onProductsChange}
-        onEditProduct={onEditProduct}
-        onDeleteProduct={onDeleteProduct}
-        onShowMessage={onShowMessage}
-        onLogAction={onLogAction}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onAdd={handleAdd}
+        onView={handleView}
       />
     </div>
   );
