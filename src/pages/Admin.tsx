@@ -1,70 +1,12 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { AdminHeader } from '@/components/AdminHeader';
-import { AdminNavigation } from '@/components/admin/AdminNavigation';
-import { UnifiedProductWorkflow } from '@/components/admin/UnifiedProductWorkflow';
-import { ProductManagement } from '@/components/admin/ProductManagement';
-import { ProductBrowser } from '@/components/admin/ProductBrowser';
-import { TemplateEditor } from '@/components/TemplateEditor';
-import { ReportingDashboard } from '@/components/ReportingDashboard';
-import { AuditLog } from '@/components/AuditLog';
-import { AdminSettings } from '@/components/admin/AdminSettings';
-import { useToast } from '@/hooks/use-toast';
-import { useProductData } from '@/hooks/useProductData';
 
-interface Product {
-  id: string;
-  title: string;
-  url: string;
-  threshold: number;
-  tags: string[];
-  price: string;
-  lastUpdated: string;
-}
+import React from 'react';
+import { AdminDashboard } from '@/components/AdminDashboard';
+import { AdminHeader } from '@/components/AdminHeader';
+import { ProductBrowser } from '@/components/admin/ProductBrowser';
+import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [pendingActions, setPendingActions] = useState(0);
   const { toast } = useToast();
-  const { saveSelectedProducts } = useProductData();
-
-  React.useEffect(() => {
-    loadProducts();
-    updatePendingActions();
-  }, []);
-
-  const loadProducts = () => {
-    const saved = localStorage.getItem('sunbeam-products');
-    if (saved) {
-      setProducts(JSON.parse(saved));
-    }
-  };
-
-  const saveProducts = (updatedProducts: Product[]) => {
-    localStorage.setItem('sunbeam-products', JSON.stringify(updatedProducts));
-    setProducts(updatedProducts);
-  };
-
-  const updatePendingActions = () => {
-    // Check for products that need attention (price changes, errors, etc.)
-    const count = products.filter(p => {
-      const lastUpdate = new Date(p.lastUpdated);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      return lastUpdate < oneDayAgo;
-    }).length;
-    setPendingActions(count);
-  };
-
-  const logAction = (action: string, details: any) => {
-    // Add to audit log
-    if ((window as any).addAuditEntry) {
-      (window as any).addAuditEntry(action, JSON.stringify(details), 'update');
-    }
-    
-    // Update pending actions count
-    updatePendingActions();
-  };
 
   const showMessage = (message: string, type: 'success' | 'error' = 'success') => {
     toast({
@@ -74,113 +16,36 @@ const Admin = () => {
     });
   };
 
-  const handleEditProduct = (productId: string) => {
-    logAction('Product Edit Started', { productId });
-    // Navigate to template tab for editing
-    setActiveTab('template');
-  };
-
-  const handleDeleteProduct = (productId: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      const updatedProducts = products.filter(p => p.id !== productId);
-      saveProducts(updatedProducts);
-      logAction('Product Deleted', { productId });
-      showMessage('Product deleted successfully');
-    }
-  };
-
-  const handleAddProductFromBrowser = (rapidApiProduct: any) => {
-    const newProduct: Product = {
-      id: Date.now().toString(),
-      title: rapidApiProduct.product_title,
-      url: rapidApiProduct.product_url,
-      threshold: 0, // User can set this later
-      tags: [],
-      price: rapidApiProduct.product_price,
-      lastUpdated: new Date().toISOString()
+  const logAction = (action: string, details: any) => {
+    const newLog = {
+      timestamp: new Date().toISOString(),
+      action,
+      details
     };
-
-    const updatedProducts = [...products, newProduct];
-    saveProducts(updatedProducts);
-    logAction('Product Added from Browser', { 
-      asin: rapidApiProduct.asin, 
-      title: rapidApiProduct.product_title 
-    });
-  };
-
-  const handleSaveSelectedProducts = (rapidApiProducts: any[]) => {
-    saveSelectedProducts(rapidApiProducts);
-    logAction('Selected Products Saved', { count: rapidApiProducts.length });
-    showMessage(`Saved ${rapidApiProducts.length} selected products for user display`);
-  };
-
-  const renderActiveTabContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <UnifiedProductWorkflow
-            products={products}
-            onProductsChange={saveProducts}
-            onLogAction={logAction}
-          />
-        );
-      case 'url-processor':
-        return (
-          <ProductManagement
-            products={products}
-            onProductsChange={saveProducts}
-            onEditProduct={handleEditProduct}
-            onDeleteProduct={handleDeleteProduct}
-            onShowMessage={showMessage}
-            onLogAction={logAction}
-          />
-        );
-      case 'browser':
-        return (
-          <ProductBrowser
-            onShowMessage={showMessage}
-            onLogAction={logAction}
-            onAddProduct={handleAddProductFromBrowser}
-          />
-        );
-      case 'template':
-        return <TemplateEditor />;
-      case 'reports':
-        return <ReportingDashboard />;
-      case 'audit':
-        return <AuditLog />;
-      case 'settings':
-        return (
-          <AdminSettings
-            onShowMessage={showMessage}
-            onLogAction={logAction}
-          />
-        );
-      default:
-        return (
-          <UnifiedProductWorkflow
-            products={products}
-            onProductsChange={saveProducts}
-            onLogAction={logAction}
-          />
-        );
-    }
+    const logs = JSON.parse(localStorage.getItem('sunbeam-logs') || '[]');
+    const updatedLogs = [newLog, ...logs].slice(0, 100);
+    localStorage.setItem('sunbeam-logs', JSON.stringify(updatedLogs));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <AdminHeader />
       
-      <AdminNavigation
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        productCount={products.length}
-        pendingActions={pendingActions}
-      />
+      <main className="container mx-auto px-6 py-8">
+        <div className="space-y-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+              Product Management Center
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Browse, select, and manage products from the API. Configure which data fields to include and export your selections.
+            </p>
+          </div>
 
-      <main className="container mx-auto px-6 py-8 max-w-7xl">
-        <div className="space-y-6">
-          {renderActiveTabContent()}
+          <ProductBrowser 
+            onShowMessage={showMessage}
+            onLogAction={logAction}
+          />
         </div>
       </main>
     </div>
