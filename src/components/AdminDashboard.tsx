@@ -45,10 +45,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [messageArea, setMessageArea] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadProducts();
+    const initializeAdmin = async () => {
+      try {
+        await loadProducts();
+      } catch (error) {
+        console.error('Error initializing admin:', error);
+        showMessage('Error loading admin panel', 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAdmin();
   }, []);
 
   const showMessage = (message: string, type: 'success' | 'error' = 'success') => {
@@ -67,22 +79,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       action,
       details
     };
-    const logs = JSON.parse(localStorage.getItem('sunbeam-logs') || '[]');
-    const updatedLogs = [newLog, ...logs].slice(0, 100);
-    localStorage.setItem('sunbeam-logs', JSON.stringify(updatedLogs));
+    try {
+      const logs = JSON.parse(localStorage.getItem('sunbeam-logs') || '[]');
+      const updatedLogs = [newLog, ...logs].slice(0, 100);
+      localStorage.setItem('sunbeam-logs', JSON.stringify(updatedLogs));
+    } catch (error) {
+      console.error('Error logging action:', error);
+    }
   };
 
-  const loadProducts = () => {
-    const saved = localStorage.getItem('sunbeam-products');
-    if (saved) {
-      setProducts(JSON.parse(saved));
+  const loadProducts = async () => {
+    try {
+      const saved = localStorage.getItem('sunbeam-products');
+      if (saved) {
+        const parsedProducts = JSON.parse(saved);
+        // Ensure products have proper structure
+        const validProducts = parsedProducts.map((product: any) => ({
+          id: product.id || Date.now().toString(),
+          title: product.title || 'Untitled Product',
+          url: product.url || '',
+          threshold: product.threshold || 0,
+          tags: Array.isArray(product.tags) ? product.tags : [],
+          price: product.price || '$0.00',
+          lastUpdated: product.lastUpdated || new Date().toISOString()
+        }));
+        setProducts(validProducts);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+      setProducts([]);
     }
   };
 
   const saveProducts = (updatedProducts: Product[]) => {
-    localStorage.setItem('sunbeam-products', JSON.stringify(updatedProducts));
-    setProducts(updatedProducts);
+    try {
+      localStorage.setItem('sunbeam-products', JSON.stringify(updatedProducts));
+      setProducts(updatedProducts);
+    } catch (error) {
+      console.error('Error saving products:', error);
+      showMessage('Error saving products', 'error');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading Admin Panel...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">

@@ -44,6 +44,7 @@ export const useProductData = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchableProducts, setSearchableProducts] = useState<SearchableProduct[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const { selectedRapidApiProducts, loadSelectedProducts, saveSelectedProducts } = useSelectedProducts();
   const { realProducts, setRealProducts, loadAdminProducts } = useAdminProducts();
@@ -51,66 +52,73 @@ export const useProductData = () => {
   const { staleDataWarning, refreshData: refreshStaleData } = useStaleDataWarning();
 
   const loadInitialData = async () => {
-    // Priority 1: Load selected products for user display
-    const selectedProducts = loadSelectedProducts();
+    if (isInitialized) return;
     
-    if (!selectedProducts) {
-      // Priority 2: Fallback to admin products
-      const adminProducts = loadAdminProducts();
-      if (adminProducts.length > 0) {
-        const transformedProducts = adminProducts.map(transformAdminProduct);
+    console.log('Loading initial data...');
+    
+    try {
+      // Priority 1: Load selected products for user display
+      const selectedProducts = loadSelectedProducts();
+      
+      if (selectedProducts && selectedProducts.length > 0) {
+        console.log('Using selected RapidAPI products:', selectedProducts.length);
+        const transformedProducts = selectedProducts.map(transformRapidApiProduct);
         setProducts(transformedProducts);
-        setSearchableProducts(adminProducts.map(transformToSearchableProduct));
+        setFilteredProducts(transformedProducts);
+        setSearchableProducts(selectedProducts.map(transformRapidApiToSearchableProduct));
+        setIsInitialized(true);
+        return;
       }
 
-      // Priority 3: If no admin products and API available, try RapidAPI
+      // Priority 2: Load admin products
+      const adminProducts = loadAdminProducts();
+      if (adminProducts.length > 0) {
+        console.log('Using admin products:', adminProducts.length);
+        const transformedProducts = adminProducts.map(transformAdminProduct);
+        setProducts(transformedProducts);
+        setFilteredProducts(transformedProducts);
+        setSearchableProducts(adminProducts.map(transformToSearchableProduct));
+        setIsInitialized(true);
+        return;
+      }
+
+      // Priority 3: Try RapidAPI if configured
       const rapidApiKey = localStorage.getItem('rapidapi-key');
-      if (rapidApiKey && realProducts.length === 0) {
+      if (rapidApiKey) {
+        console.log('Attempting to load from RapidAPI...');
         const rapidProducts = await loadProductsFromRapidApi();
         if (rapidProducts.length > 0) {
+          console.log('Using RapidAPI products:', rapidProducts.length);
           const transformedProducts = rapidProducts.map(transformRapidApiProduct);
           setProducts(transformedProducts);
           setFilteredProducts(transformedProducts);
           setSearchableProducts(rapidProducts.map(transformRapidApiToSearchableProduct));
+          setIsInitialized(true);
+          return;
         }
       }
 
-      // Priority 4: Final fallback to mock data
-      if (realProducts.length === 0 && selectedRapidApiProducts.length === 0) {
-        setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
-        setProducts(mockProducts);
-        setFilteredProducts(mockProducts);
-      }
-    } else {
-      const transformedProducts = selectedProducts.map(transformRapidApiProduct);
-      setProducts(transformedProducts);
-      setFilteredProducts(transformedProducts);
-      setSearchableProducts(selectedProducts.map(transformRapidApiToSearchableProduct));
+      // Priority 4: Fallback to mock data
+      console.log('Using mock products as fallback');
+      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
+      setProducts(mockProducts);
+      setFilteredProducts(mockProducts);
+      setIsInitialized(true);
+      
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      // Fallback to mock data on error
+      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
+      setProducts(mockProducts);
+      setFilteredProducts(mockProducts);
+      setIsInitialized(true);
     }
   };
 
   const refreshData = async () => {
+    setIsInitialized(false);
     refreshStaleData();
-    
-    // Reload selected products first
-    const selectedProducts = loadSelectedProducts();
-    
-    const adminProducts = loadAdminProducts();
-    if (adminProducts.length > 0 && selectedRapidApiProducts.length === 0) {
-      const transformedProducts = adminProducts.map(transformAdminProduct);
-      setProducts(transformedProducts);
-      setSearchableProducts(adminProducts.map(transformToSearchableProduct));
-    }
-
-    if (selectedRapidApiProducts.length === 0) {
-      const rapidProducts = await loadProductsFromRapidApi();
-      if (rapidProducts.length > 0) {
-        const transformedProducts = rapidProducts.map(transformRapidApiProduct);
-        setProducts(transformedProducts);
-        setFilteredProducts(transformedProducts);
-        setSearchableProducts(rapidProducts.map(transformRapidApiToSearchableProduct));
-      }
-    }
+    await loadInitialData();
   };
 
   const handleSearchResults = (results: SearchableProduct[]) => {
@@ -119,8 +127,17 @@ export const useProductData = () => {
     setFilteredProducts(filtered);
   };
 
+  // Initialize data on mount
   useEffect(() => {
     loadInitialData();
+  }, []);
+
+  // Re-initialize when selected products change
+  useEffect(() => {
+    if (isInitialized && selectedRapidApiProducts.length > 0) {
+      setIsInitialized(false);
+      loadInitialData();
+    }
   }, [selectedRapidApiProducts.length]);
 
   return {
@@ -133,6 +150,7 @@ export const useProductData = () => {
     selectedRapidApiProducts,
     handleSearchResults,
     refreshData,
-    saveSelectedProducts
+    saveSelectedProducts,
+    isInitialized
   };
 };
