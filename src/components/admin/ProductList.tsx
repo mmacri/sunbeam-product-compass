@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Filter,
-  RefreshCw,
-  Edit,
-  Trash2
+  Trash2, 
+  Edit, 
+  Plus, 
+  Search, 
+  Eye, 
+  ExternalLink,
+  Tag
 } from 'lucide-react';
-import { ProductExtractor } from '@/services/productExtractor';
 
 interface Product {
   id: string;
@@ -24,134 +26,153 @@ interface Product {
 
 interface ProductListProps {
   products: Product[];
-  onProductsChange: (products: Product[]) => void;
-  onEditProduct: (productId: string) => void;
-  onDeleteProduct: (productId: string) => void;
-  onShowMessage: (message: string, type?: 'success' | 'error') => void;
-  onLogAction: (action: string, details: any) => void;
+  onEdit: (product: Product) => void;
+  onDelete: (id: string) => void;
+  onAdd: () => void;
+  onView: (id: string) => void;
 }
 
 export const ProductList: React.FC<ProductListProps> = ({
   products,
-  onProductsChange,
-  onEditProduct,
-  onDeleteProduct,
-  onShowMessage,
-  onLogAction
+  onEdit,
+  onDelete,
+  onAdd,
+  onView
 }) => {
-  const [filterTag, setFilterTag] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
 
-  const rescrapeProduct = async (id: string) => {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.url.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTag = !selectedTag || (product.tags && product.tags.includes(selectedTag));
+    return matchesSearch && matchesTag;
+  });
 
-    try {
-      const extractedData = await ProductExtractor.extractFromUrl(product.url);
-      
-      const updatedProducts = products.map(p => 
-        p.id === id 
-          ? { 
-              ...p, 
-              title: extractedData.title,
-              price: extractedData.currentPrice,
-              lastUpdated: new Date().toISOString()
-            }
-          : p
-      );
-      onProductsChange(updatedProducts);
-      onLogAction('product_rescraped', { id, title: extractedData.title });
-      onShowMessage('Product data updated with fresh information');
-    } catch (error) {
-      onLogAction('product_rescrape_failed', { id, error: error.message });
-      onShowMessage('Failed to update product data', 'error');
-    }
-  };
-
-  const deleteProduct = (id: string) => {
-    const updatedProducts = products.filter(p => p.id !== id);
-    onProductsChange(updatedProducts);
-    onLogAction('product_deleted', { id });
-    onShowMessage('Product deleted');
-    onDeleteProduct(id);
-  };
-
-  const filteredProducts = filterTag 
-    ? products.filter(p => p.tags.some(tag => tag.toLowerCase().includes(filterTag.toLowerCase())))
-    : products;
+  // Get all unique tags from products, safely handling undefined tags
+  const allTags = Array.from(new Set(
+    products.flatMap(product => product.tags || [])
+  ));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Filter className="w-5 h-5" />
-          Product List
+        <CardTitle className="flex items-center justify-between">
+          <span>Product Management</span>
+          <Button onClick={onAdd} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Button>
         </CardTitle>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter by tag..."
-            value={filterTag}
-            onChange={(e) => setFilterTag(e.target.value)}
-            className="max-w-xs"
-          />
-        </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+      <CardContent className="space-y-4">
+        {/* Search and Filter Controls */}
+        <div className="flex gap-4 items-center">
+          <div className="flex-1 relative">
+            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <select
+            value={selectedTag}
+            onChange={(e) => setSelectedTag(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="">All Tags</option>
+            {allTags.map(tag => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Products List */}
+        <div className="space-y-3">
           {filteredProducts.length === 0 ? (
-            <p className="text-gray-500">No products found</p>
+            <div className="text-center py-8 text-gray-500">
+              {products.length === 0 ? 'No products added yet.' : 'No products match your search.'}
+            </div>
           ) : (
-            filteredProducts.map((product) => (
-              <div key={product.id} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{product.title}</h3>
-                    <a 
-                      href={product.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {product.url}
-                    </a>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                      <span>Threshold: ${product.threshold}</span>
-                      <span>Price: {product.price}</span>
-                      <span>Updated: {new Date(product.lastUpdated).toLocaleDateString()}</span>
+            filteredProducts.map(product => (
+              <Card key={product.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-2">{product.title}</h3>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div>
+                          <strong>URL:</strong> 
+                          <a 
+                            href={product.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline ml-2"
+                          >
+                            {product.url.length > 50 ? product.url.substring(0, 50) + '...' : product.url}
+                          </a>
+                        </div>
+                        <div><strong>Price:</strong> {product.price}</div>
+                        <div><strong>Price Threshold:</strong> {product.threshold}%</div>
+                        <div><strong>Last Updated:</strong> {new Date(product.lastUpdated).toLocaleDateString()}</div>
+                      </div>
+                      
+                      {/* Tags */}
+                      {product.tags && product.tags.length > 0 && (
+                        <div className="flex items-center gap-2 mt-3">
+                          <Tag className="w-4 h-4 text-gray-500" />
+                          <div className="flex flex-wrap gap-1">
+                            {product.tags.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-1 mt-2">
-                      {product.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onView(product.id)}
+                        title="View Product"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(product.url, '_blank')}
+                        title="Open URL"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(product)}
+                        title="Edit Product"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(product.id)}
+                        title="Delete Product"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rescrapeProduct(product.id)}
-                      title="Refresh product data"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onEditProduct(product.id)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => deleteProduct(product.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))
           )}
         </div>
