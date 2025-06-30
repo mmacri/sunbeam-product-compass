@@ -22,6 +22,10 @@ export const FullProductPage: React.FC<FullProductPageProps> = ({ product, onBac
     </div>
   );
 
+  const getAffiliateUrl = (asin: string) => {
+    return `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-6 py-8">
@@ -112,11 +116,11 @@ export const FullProductPage: React.FC<FullProductPageProps> = ({ product, onBac
                   )}
                 </div>
 
-                {/* Purchase Button */}
+                {/* Purchase Button with Affiliate Link */}
                 <Button
                   size="lg"
                   className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                  onClick={() => window.open(product.product_url, '_blank')}
+                  onClick={() => window.open(getAffiliateUrl(product.asin), '_blank')}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Buy on Amazon
@@ -142,6 +146,18 @@ export const FullProductPage: React.FC<FullProductPageProps> = ({ product, onBac
                 <div><strong>Min Offer Price:</strong> {formatPrice(product.product_minimum_offer_price)}</div>
                 <div><strong>Availability:</strong> {product.product_availability || 'In Stock'}</div>
                 <div><strong>Has Variations:</strong> {product.has_variations ? 'Yes' : 'No'}</div>
+              </div>
+              
+              {/* Affiliate Link */}
+              <div className="pt-3 border-t">
+                <a 
+                  href={getAffiliateUrl(product.asin)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                >
+                  View Full Details on Amazon →
+                </a>
               </div>
             </CardContent>
           </Card>
