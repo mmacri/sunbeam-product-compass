@@ -20,7 +20,7 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
     return selectedAsins.includes(asin);
   };
 
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     return (
       <Card className="p-8 text-center">
         <div className="text-gray-500 dark:text-gray-400">
@@ -57,18 +57,18 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                 {product.product_photo && (
                   <img 
                     src={product.product_photo} 
-                    alt={product.product_title}
+                    alt={product.product_title || 'Product image'}
                     className="w-16 h-16 object-cover rounded mb-3 float-right ml-3"
                   />
                 )}
                 
                 <h3 className="text-sm font-semibold line-clamp-2 mb-2">
-                  {product.product_title}
+                  {product.product_title || 'Untitled Product'}
                 </h3>
                 
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-green-600">
-                    {product.product_price}
+                    {product.product_price || 'Price not available'}
                   </span>
                   {product.product_original_price && product.product_original_price !== product.product_price && (
                     <span className="text-sm text-gray-500 line-through">
@@ -120,7 +120,7 @@ export const ProductBrowserGrid: React.FC<ProductBrowserGridProps> = ({
                 )}
 
                 <div className="text-xs text-gray-500 mt-2">
-                  ASIN: {product.asin}
+                  ASIN: {product.asin || 'N/A'}
                 </div>
               </div>
             </div>
