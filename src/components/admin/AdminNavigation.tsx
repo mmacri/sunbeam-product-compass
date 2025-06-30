@@ -29,10 +29,10 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
   return (
     <div className="border-b bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 dark:border-gray-700 sticky top-0 z-40">
       <div className="container mx-auto px-6">
-        <TabsList className="w-full h-14 bg-transparent flex justify-start overflow-x-auto">
+        <TabsList className="w-full h-14 bg-transparent grid grid-cols-7 gap-1">
           <TabsTrigger 
             value="dashboard" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <LayoutDashboard className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -40,7 +40,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
           
           <TabsTrigger 
             value="url-processor" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <Link className="w-4 h-4" />
             <span className="hidden sm:inline">Products</span>
@@ -53,7 +53,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
           <TabsTrigger 
             value="browser" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">Browse</span>
@@ -61,7 +61,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
           
           <TabsTrigger 
             value="template" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Template</span>
@@ -69,7 +69,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
           
           <TabsTrigger 
             value="reports" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Reports</span>
@@ -77,7 +77,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
           
           <TabsTrigger 
             value="audit" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <Activity className="w-4 h-4" />
             <span className="hidden sm:inline">Audit</span>
@@ -90,7 +90,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({
           
           <TabsTrigger 
             value="settings" 
-            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300 whitespace-nowrap"
+            className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
           >
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline">Settings</span>

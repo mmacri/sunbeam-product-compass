@@ -9,6 +9,7 @@ import { ProductRequestForm } from '@/components/ProductRequestForm';
 import { mockProducts } from '@/utils/mockData';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ProductSearch } from '@/components/ProductSearch';
+import { RapidApiService } from '@/services/rapidApi';
 
 interface SearchableProduct {
   id: string;
@@ -28,9 +29,14 @@ const Index = () => {
   const [searchableProducts, setSearchableProducts] = useState<SearchableProduct[]>([]);
   const [staleDataWarning, setStaleDataWarning] = useState(false);
   const [realProducts, setRealProducts] = useState([]);
+  const [isLoadingRapidApi, setIsLoadingRapidApi] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
     // Load real products from admin
     const adminProducts = localStorage.getItem('sunbeam-products');
     if (adminProducts) {
@@ -46,8 +52,16 @@ const Index = () => {
       } catch (error) {
         console.error('Failed to load real products:', error);
       }
-    } else {
-      // Transform mock products for search
+    }
+
+    // Try to load from RapidAPI if available
+    const rapidApiKey = localStorage.getItem('rapidapi-key');
+    if (rapidApiKey && realProducts.length === 0) {
+      await loadProductsFromRapidApi();
+    }
+
+    // If no products from either source, use mock data
+    if (realProducts.length === 0) {
       setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
     }
 
@@ -63,7 +77,86 @@ const Index = () => {
     if (!lastUpdate) {
       localStorage.setItem('sunbeam-last-update', now.toString());
     }
-  }, []);
+  };
+
+  const loadProductsFromRapidApi = async () => {
+    const rapidApiKey = localStorage.getItem('rapidapi-key');
+    if (!rapidApiKey) return;
+
+    setIsLoadingRapidApi(true);
+    try {
+      RapidApiService.setApiKey(rapidApiKey);
+      // Search for popular products
+      const searchResults = await RapidApiService.searchProducts('best sellers', {
+        sortBy: 'BEST_SELLERS',
+        country: 'US',
+        page: 1
+      });
+
+      if (searchResults.products && searchResults.products.length > 0) {
+        const transformedProducts = searchResults.products.slice(0,10).map(transformRapidApiProduct);
+        setProducts(transformedProducts);
+        setFilteredProducts(transformedProducts);
+        setSearchableProducts(searchResults.products.slice(0,10).map(transformRapidApiToSearchableProduct));
+      }
+    } catch (error) {
+      console.error('Failed to load products from RapidAPI:', error);
+    } finally {
+      setIsLoadingRapidApi(false);
+    }
+  };
+
+  const transformRapidApiProduct = (rapidProduct: any) => {
+    return {
+      id: rapidProduct.asin,
+      title: rapidProduct.product_title,
+      currentPrice: rapidProduct.product_price,
+      originalPrice: rapidProduct.product_original_price || rapidProduct.product_price,
+      rating: parseFloat(rapidProduct.product_star_rating) || 4.0,
+      reviews: rapidProduct.product_num_ratings || 0,
+      description: `${rapidProduct.product_title} - ${rapidProduct.product_byline || 'Quality product from Amazon marketplace'}`,
+      keyFeatures: [
+        'Amazon Prime eligible',
+        rapidProduct.is_best_seller ? 'Best Seller' : 'Popular choice',
+        rapidProduct.is_amazon_choice ? 'Amazon\'s Choice' : 'Highly rated',
+        'Fast delivery available'
+      ],
+      specs: {
+        'ASIN': rapidProduct.asin,
+        'Price': rapidProduct.product_price,
+        'Rating': `${rapidProduct.product_star_rating}/5 (${rapidProduct.product_num_ratings} reviews)`,
+        'Availability': rapidProduct.product_availability || 'In Stock'
+      },
+      stores: [
+        { name: 'Amazon', url: rapidProduct.product_url }
+      ],
+      priceHistory: [
+        { date: new Date().toISOString().split('T')[0], price: rapidProduct.product_price, store: 'Amazon' }
+      ]
+    };
+  };
+
+  const transformRapidApiToSearchableProduct = (rapidProduct: any): SearchableProduct => {
+    return {
+      id: rapidProduct.asin,
+      title: rapidProduct.product_title,
+      price: rapidProduct.product_price,
+      category: 'Electronics',
+      categories: ['Electronics'],
+      metaTags: [
+        rapidProduct.is_best_seller ? 'best-seller' : '',
+        rapidProduct.is_amazon_choice ? 'amazon-choice' : '',
+        rapidProduct.is_prime ? 'prime' : ''
+      ].filter(Boolean),
+      searchTerms: rapidProduct.product_title.toLowerCase().split(' '),
+      tags: [
+        rapidProduct.is_best_seller ? 'Best Seller' : '',
+        rapidProduct.is_amazon_choice ? 'Amazon\'s Choice' : '',
+        rapidProduct.is_prime ? 'Prime' : ''
+      ].filter(Boolean),
+      lastUpdated: new Date().toISOString()
+    };
+  };
 
   const transformAdminProduct = (adminProduct: any) => {
     return {
@@ -129,7 +222,7 @@ const Index = () => {
     setFilteredProducts(filtered);
   };
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setStaleDataWarning(false);
     localStorage.setItem('sunbeam-last-update', new Date().getTime().toString());
     
@@ -148,6 +241,9 @@ const Index = () => {
         console.error('Failed to refresh products:', error);
       }
     }
+
+    // Also try to refresh from RapidAPI
+    await loadProductsFromRapidApi();
   };
 
   return (
@@ -197,7 +293,9 @@ const Index = () => {
                 {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               </Button>
               <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-800">
-                {realProducts.length > 0 ? `${realProducts.length} Live Products` : 'Product Reviews & Price Tracking'}
+                {realProducts.length > 0 ? `${realProducts.length} Live Products` : 
+                 isLoadingRapidApi ? 'Loading Products...' : 
+                 'Product Reviews & Price Tracking'}
               </Badge>
             </div>
           </div>
@@ -243,16 +341,23 @@ const Index = () => {
           ) : filteredProducts.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <h3 className="text-xl font-semibold mb-4">No Products Available Yet</h3>
+                <h3 className="text-xl font-semibold mb-4">
+                  {isLoadingRapidApi ? 'Loading Products...' : 'No Products Available Yet'}
+                </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Use the request form above to suggest products for review, or visit the admin panel to add products directly.
+                  {isLoadingRapidApi ? 
+                    'Fetching the latest products from our database...' :
+                    'Use the request form above to suggest products for review, or visit the admin panel to add products directly.'
+                  }
                 </p>
-                <Button 
-                  onClick={() => window.open('/admin', '_blank')}
-                  className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                >
-                  Go to Admin Panel
-                </Button>
+                {!isLoadingRapidApi && (
+                  <Button 
+                    onClick={() => window.open('/admin', '_blank')}
+                    className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+                  >
+                    Go to Admin Panel
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
