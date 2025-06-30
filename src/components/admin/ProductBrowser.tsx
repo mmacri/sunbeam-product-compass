@@ -1,14 +1,13 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Download, Upload, Columns, Save, RefreshCw, Plus } from 'lucide-react';
 import { ExcelService } from '@/services/excelService';
 import { RapidApiProduct } from '@/types/rapidApi';
 import { ProductSelectionService } from '@/services/productSelection';
-import { ColumnSelector } from './ColumnSelector';
 import { useRapidApiProducts } from '@/hooks/useRapidApiProducts';
+import { ProductBrowserHeader } from './ProductBrowserHeader';
+import { ProductBrowserControls } from './ProductBrowserControls';
+import { ProductBrowserActions } from './ProductBrowserActions';
+import { ProductBrowserGrid } from './ProductBrowserGrid';
 
 interface ProductBrowserProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -135,7 +134,6 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       return;
     }
 
-    // Filter products based on selected columns
     const filteredProducts = selectedProducts.map(product => {
       const filtered: any = {};
       selectedColumns.forEach(column => {
@@ -174,10 +172,6 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     setSelectedAsins(ProductSelectionService.getSelectedAsins());
   };
 
-  const isSelected = (asin: string): boolean => {
-    return selectedAsins.includes(asin);
-  };
-
   const selectAllFiltered = () => {
     const asins = filteredProducts.map(p => p.asin);
     ProductSelectionService.selectAll(asins);
@@ -202,171 +196,39 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* API Loading Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            Load Products from RapidAPI
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={handleLoadFromRapidApi}
-              disabled={isLoadingRapidApi}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoadingRapidApi ? 'animate-spin' : ''}`} />
-              {isLoadingRapidApi ? 'Loading...' : 'Load Products from API'}
-            </Button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Current products: {products.length}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <ProductBrowserHeader
+        onLoadFromRapidApi={handleLoadFromRapidApi}
+        isLoadingRapidApi={isLoadingRapidApi}
+        productCount={products.length}
+      />
 
-      {/* Search and Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
-            Product Browser
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating-desc">Highest Rated</SelectItem>
-                <SelectItem value="rating-asc">Lowest Rated</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="reviews-desc">Most Reviews</SelectItem>
-                <SelectItem value="alphabetical">A-Z</SelectItem>
-              </SelectContent>
-            </Select>
+      <ProductBrowserControls
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        showColumnSelector={showColumnSelector}
+        setShowColumnSelector={setShowColumnSelector}
+        onColumnSave={handleColumnSave}
+      />
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Products</SelectItem>
-                <SelectItem value="best-sellers">Best Sellers</SelectItem>
-                <SelectItem value="amazon-choice">Amazon's Choice</SelectItem>
-                <SelectItem value="prime">Prime Eligible</SelectItem>
-                <SelectItem value="eco-friendly">Eco-Friendly</SelectItem>
-              </SelectContent>
-            </Select>
+      <ProductBrowserActions
+        filteredProductsCount={filteredProducts.length}
+        selectedAsinsCount={selectedAsins.length}
+        onSelectAllFiltered={selectAllFiltered}
+        onClearSelection={clearSelection}
+        onExportSelected={exportSelectedProducts}
+        onSaveSelectedForUsers={saveSelectedForUsers}
+        onImport={handleImport}
+      />
 
-            <Button
-              onClick={() => setShowColumnSelector(!showColumnSelector)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Columns className="w-4 h-4" />
-              Columns
-            </Button>
-          </div>
-
-          {showColumnSelector && (
-            <div className="mb-4">
-              <ColumnSelector onSave={handleColumnSave} />
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={selectAllFiltered}
-              variant="outline"
-              size="sm"
-              disabled={filteredProducts.length === 0}
-            >
-              Select All ({filteredProducts.length})
-            </Button>
-            <Button
-              onClick={clearSelection}
-              variant="outline"
-              size="sm"
-              disabled={selectedAsins.length === 0}
-            >
-              Clear Selection
-            </Button>
-            <Button
-              onClick={exportSelectedProducts}
-              variant="outline"
-              size="sm"
-              disabled={selectedAsins.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export Selected ({selectedAsins.length})
-            </Button>
-            <Button
-              onClick={saveSelectedForUsers}
-              size="sm"
-              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-              disabled={selectedAsins.length === 0}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save for Users ({selectedAsins.length})
-            </Button>
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleImport}
-                className="hidden"
-                id="import-file"
-              />
-              <Button
-                onClick={() => document.getElementById('import-file')?.click()}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Import Excel
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <Card key={product.asin} className="shadow-md hover:shadow-lg transition-shadow duration-300">
-            <CardContent className="p-4">
-              <div className="flex items-start">
-                <div className="mr-4">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-orange-500 focus:ring-orange-500"
-                    checked={isSelected(product.asin)}
-                    onChange={() => toggleSelection(product.asin)}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{product.product_title}</h3>
-                  <p className="text-gray-600">{product.product_price}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <ProductBrowserGrid
+        products={filteredProducts}
+        selectedAsins={selectedAsins}
+        onToggleSelection={toggleSelection}
+      />
     </div>
   );
 };
