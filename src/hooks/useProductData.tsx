@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { mockProducts } from '@/utils/mockData';
 import { RapidApiService } from '@/services/rapidApi';
+import { ProductSelectionService } from '@/services/productSelection';
 
 interface SearchableProduct {
   id: string;
@@ -31,12 +31,13 @@ interface Product {
 }
 
 export const useProductData = () => {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchableProducts, setSearchableProducts] = useState<SearchableProduct[]>([]);
   const [staleDataWarning, setStaleDataWarning] = useState(false);
   const [realProducts, setRealProducts] = useState<any[]>([]);
   const [isLoadingRapidApi, setIsLoadingRapidApi] = useState(false);
+  const [selectedRapidApiProducts, setSelectedRapidApiProducts] = useState<any[]>([]);
 
   const transformRapidApiProduct = (rapidProduct: any): Product => {
     return {
@@ -149,6 +150,35 @@ export const useProductData = () => {
     };
   };
 
+  const loadSelectedProducts = () => {
+    try {
+      const stored = localStorage.getItem('sunbeam-selected-rapidapi-products');
+      if (stored) {
+        const selectedProducts = JSON.parse(stored);
+        setSelectedRapidApiProducts(selectedProducts);
+        
+        const transformedProducts = selectedProducts.map(transformRapidApiProduct);
+        setProducts(transformedProducts);
+        setFilteredProducts(transformedProducts);
+        setSearchableProducts(selectedProducts.map(transformRapidApiToSearchableProduct));
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to load selected products:', error);
+    }
+    return false;
+  };
+
+  const saveSelectedProducts = (rapidApiProducts: any[]) => {
+    localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(rapidApiProducts));
+    setSelectedRapidApiProducts(rapidApiProducts);
+    
+    const transformedProducts = rapidApiProducts.map(transformRapidApiProduct);
+    setProducts(transformedProducts);
+    setFilteredProducts(transformedProducts);
+    setSearchableProducts(rapidApiProducts.map(transformRapidApiToSearchableProduct));
+  };
+
   const loadProductsFromRapidApi = async () => {
     const rapidApiKey = localStorage.getItem('rapidapi-key');
     if (!rapidApiKey) return;
@@ -176,28 +206,38 @@ export const useProductData = () => {
   };
 
   const loadInitialData = async () => {
-    const adminProducts = localStorage.getItem('sunbeam-products');
-    if (adminProducts) {
-      try {
-        const parsed = JSON.parse(adminProducts);
-        setRealProducts(parsed);
-        if (parsed.length > 0) {
-          const transformedProducts = parsed.map(transformAdminProduct);
-          setProducts(transformedProducts);
-          setSearchableProducts(parsed.map(transformToSearchableProduct));
+    // First try to load selected products
+    const hasSelectedProducts = loadSelectedProducts();
+    
+    if (!hasSelectedProducts) {
+      // Fallback to admin products
+      const adminProducts = localStorage.getItem('sunbeam-products');
+      if (adminProducts) {
+        try {
+          const parsed = JSON.parse(adminProducts);
+          setRealProducts(parsed);
+          if (parsed.length > 0) {
+            const transformedProducts = parsed.map(transformAdminProduct);
+            setProducts(transformedProducts);
+            setSearchableProducts(parsed.map(transformToSearchableProduct));
+          }
+        } catch (error) {
+          console.error('Failed to load real products:', error);
         }
-      } catch (error) {
-        console.error('Failed to load real products:', error);
       }
-    }
 
-    const rapidApiKey = localStorage.getItem('rapidapi-key');
-    if (rapidApiKey && realProducts.length === 0) {
-      await loadProductsFromRapidApi();
-    }
+      // If no admin products and API available, try RapidAPI
+      const rapidApiKey = localStorage.getItem('rapidapi-key');
+      if (rapidApiKey && realProducts.length === 0) {
+        await loadProductsFromRapidApi();
+      }
 
-    if (realProducts.length === 0) {
-      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
+      // Final fallback to mock data
+      if (realProducts.length === 0 && selectedRapidApiProducts.length === 0) {
+        setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
+        setProducts(mockProducts);
+        setFilteredProducts(mockProducts);
+      }
     }
 
     const lastUpdate = localStorage.getItem('sunbeam-last-update');
@@ -252,7 +292,9 @@ export const useProductData = () => {
     staleDataWarning,
     realProducts,
     isLoadingRapidApi,
+    selectedRapidApiProducts,
     handleSearchResults,
-    refreshData
+    refreshData,
+    saveSelectedProducts
   };
 };

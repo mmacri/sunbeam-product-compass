@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,8 @@ import {
 } from 'lucide-react';
 import { RapidApiService } from '@/services/rapidApi';
 import { RapidApiProduct } from '@/types/rapidApi';
+import { ProductSelectionService } from '@/services/productSelection';
+import { ExcelService } from '@/services/excelService';
 
 interface ProductBrowserProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -44,6 +45,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   const [sortBy, setSortBy] = useState('BEST_SELLERS');
   const [filterBy, setFilterBy] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<RapidApiProduct | null>(null);
+  const [selectedAsins, setSelectedAsins] = useState<string[]>([]);
 
   const searchProducts = async () => {
     if (!searchQuery.trim()) {
@@ -86,59 +88,65 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     });
   }, [products, filterBy]);
 
-  const exportToExcel = () => {
-    if (filteredProducts.length === 0) {
-      onShowMessage('No products to export', 'error');
+  const handleToggleSelection = (asin: string) => {
+    ProductSelectionService.toggleProduct(asin);
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+    onLogAction('Product Selection Toggled', { asin });
+  };
+
+  const handleSelectAll = () => {
+    const asins = filteredProducts.map(p => p.asin);
+    ProductSelectionService.selectAll(asins);
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+    onShowMessage(`Selected all ${asins.length} products`);
+    onLogAction('Select All Products', { count: asins.length });
+  };
+
+  const handleClearAll = () => {
+    ProductSelectionService.clearAll();
+    setSelectedAsins([]);
+    onShowMessage('Cleared all selections');
+    onLogAction('Clear All Selections', {});
+  };
+
+  const handleExportSelected = () => {
+    const selectedProducts = filteredProducts.filter(p => 
+      ProductSelectionService.isProductSelected(p.asin)
+    );
+    
+    if (selectedProducts.length === 0) {
+      onShowMessage('No products selected for export', 'error');
       return;
     }
 
-    // Create CSV content
-    const headers = [
-      'ASIN', 'Title', 'Price', 'Original Price', 'Rating', 'Reviews', 'URL', 
-      'Is Prime', 'Is Best Seller', 'Is Amazon Choice', 'Currency', 'Delivery',
-      'Sales Volume', 'Coupon', 'Availability', 'Min Offer Price', 'Num Offers'
-    ];
-    
-    const csvContent = [
-      headers.join(','),
-      ...filteredProducts.map(product => [
-        product.asin,
-        `"${product.product_title.replace(/"/g, '""')}"`,
-        product.product_price,
-        product.product_original_price || '',
-        product.product_star_rating,
-        product.product_num_ratings,
-        product.product_url,
-        product.is_prime ? 'Yes' : 'No',
-        product.is_best_seller ? 'Yes' : 'No',
-        product.is_amazon_choice ? 'Yes' : 'No',
-        product.currency,
-        `"${product.delivery.replace(/"/g, '""')}"`,
-        product.sales_volume || '',
-        product.coupon_text || '',
-        product.product_availability || '',
-        product.product_minimum_offer_price,
-        product.product_num_offers
-      ].join(','))
-    ].join('\n');
-
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `amazon-products-${searchQuery}-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    onLogAction('Products Exported to Excel', { 
-      query: searchQuery, 
-      productCount: filteredProducts.length 
-    });
-    onShowMessage(`Exported ${filteredProducts.length} products to Excel`);
+    ExcelService.exportToExcel(selectedProducts);
+    onShowMessage(`Exported ${selectedProducts.length} selected products`);
+    onLogAction('Export Selected Products', { count: selectedProducts.length });
   };
+
+  const handleImportExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    ExcelService.importFromExcel(file)
+      .then(importedProducts => {
+        setProducts(importedProducts);
+        setFilteredProducts(importedProducts);
+        onShowMessage(`Imported ${importedProducts.length} products from Excel`);
+        onLogAction('Import Products from Excel', { count: importedProducts.length });
+      })
+      .catch(error => {
+        onShowMessage(`Import failed: ${error.message}`, 'error');
+        onLogAction('Import Failed', { error: error.message });
+      });
+    
+    // Clear the input
+    event.target.value = '';
+  };
+
+  React.useEffect(() => {
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+  }, []);
 
   const formatPrice = (price: string) => {
     return price || 'N/A';
@@ -172,7 +180,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="w-5 h-5" />
-            Product Browser & Data Export
+            Product Browser & Selection
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -203,21 +211,45 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
           </div>
 
           {products.length > 0 && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <Input
                 placeholder="Filter results..."
                 value={filterBy}
                 onChange={(e) => setFilterBy(e.target.value)}
                 className="max-w-xs"
               />
-              <Button
-                onClick={exportToExcel}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export to Excel
-              </Button>
+              
+              <div className="flex gap-2">
+                <Button onClick={handleSelectAll} variant="outline" size="sm">
+                  Select All ({filteredProducts.length})
+                </Button>
+                <Button onClick={handleClearAll} variant="outline" size="sm">
+                  Clear All
+                </Button>
+                <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Export Selected ({selectedAsins.length})
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="excel-import" className="cursor-pointer">
+                  <Button variant="outline" size="sm" asChild>
+                    <span>
+                      <FileSpreadsheet className="w-4 h-4 mr-1" />
+                      Import Excel
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="excel-import"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleImportExcel}
+                  className="hidden"
+                />
+              </div>
+              
               <span className="text-sm text-gray-600">
                 Showing {filteredProducts.length} of {products.length} products
               </span>
@@ -231,16 +263,13 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Search Results</span>
-              <Button
-                onClick={exportToExcel}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export {filteredProducts.length} Products
-              </Button>
+              <span>Search Results ({selectedAsins.length} selected)</span>
+              <div className="flex gap-2">
+                <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Export Selected
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -248,6 +277,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">Select</TableHead>
                     <TableHead className="w-16">Image</TableHead>
                     <TableHead className="min-w-64">Product Details</TableHead>
                     <TableHead>Pricing</TableHead>
@@ -259,6 +289,14 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.asin}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={ProductSelectionService.isProductSelected(product.asin)}
+                          onChange={() => handleToggleSelection(product.asin)}
+                          className="w-4 h-4"
+                        />
+                      </TableCell>
                       <TableCell>
                         <img
                           src={product.product_photo}

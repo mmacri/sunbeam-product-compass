@@ -10,6 +10,7 @@ import { ReportingDashboard } from '@/components/ReportingDashboard';
 import { AuditLog } from '@/components/AuditLog';
 import { AdminSettings } from '@/components/admin/AdminSettings';
 import { useToast } from '@/hooks/use-toast';
+import { useProductData } from '@/hooks/useProductData';
 
 interface Product {
   id: string;
@@ -26,6 +27,7 @@ const Admin = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [pendingActions, setPendingActions] = useState(0);
   const { toast } = useToast();
+  const { saveSelectedProducts } = useProductData();
 
   React.useEffect(() => {
     loadProducts();
@@ -104,6 +106,12 @@ const Admin = () => {
       asin: rapidApiProduct.asin, 
       title: rapidApiProduct.product_title 
     });
+  };
+
+  const handleSaveSelectedProducts = (rapidApiProducts: any[]) => {
+    saveSelectedProducts(rapidApiProducts);
+    logAction('Selected Products Saved', { count: rapidApiProducts.length });
+    showMessage(`Saved ${rapidApiProducts.length} selected products for user display`);
   };
 
   const renderActiveTabContent = () => {
