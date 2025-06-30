@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiConfiguration } from './ApiConfiguration';
 import { Settings } from 'lucide-react';
+import { RapidApiService } from '@/services/rapidApi';
 
 interface AdminSettingsProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -13,6 +14,16 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({
   onShowMessage,
   onLogAction
 }) => {
+  useEffect(() => {
+    // Initialize RapidAPI service with saved key on component mount
+    const savedKey = localStorage.getItem('rapidapi-key');
+    const savedEnabled = localStorage.getItem('rapidapi-enabled') === 'true';
+    
+    if (savedKey && savedEnabled) {
+      RapidApiService.setApiKey(savedKey);
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <Card className="dark:bg-gray-800 dark:border-gray-700">

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,11 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Settings
 } from 'lucide-react';
 import { ProductExtractor } from '@/services/productExtractor';
+import { RapidApiService } from '@/services/rapidApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface Product {
@@ -47,7 +49,19 @@ export const UnifiedProductWorkflow: React.FC<UnifiedProductWorkflowProps> = ({
     tags: ''
   });
   const [progress, setProgress] = useState(0);
+  const [isApiConfigured, setIsApiConfigured] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if RapidAPI is configured
+    const rapidApiKey = localStorage.getItem('rapidapi-key');
+    const rapidApiEnabled = localStorage.getItem('rapidapi-enabled') === 'true';
+    setIsApiConfigured(!!rapidApiKey && rapidApiEnabled);
+    
+    if (rapidApiKey && rapidApiEnabled) {
+      RapidApiService.setApiKey(rapidApiKey);
+    }
+  }, []);
 
   const processUrl = async () => {
     if (!productUrl.trim()) {
@@ -89,7 +103,7 @@ export const UnifiedProductWorkflow: React.FC<UnifiedProductWorkflowProps> = ({
       
       toast({
         title: "Extraction Failed",
-        description: "Unable to extract product data. Please check the URL and try again.",
+        description: error.message || "Unable to extract product data. Please check the URL and try again.",
         variant: "destructive",
       });
     }
@@ -135,6 +149,16 @@ export const UnifiedProductWorkflow: React.FC<UnifiedProductWorkflowProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* API Configuration Warning */}
+      {!isApiConfigured && (
+        <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+          <Settings className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800 dark:text-orange-200">
+            <strong>Enhanced Features Disabled:</strong> Configure your RapidAPI key in Settings to unlock advanced product data extraction with rich metadata, ratings, and pricing information.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Progress Indicator */}
       <Card>
         <CardHeader>
