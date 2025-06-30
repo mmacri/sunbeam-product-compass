@@ -2,14 +2,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ProductSearch } from '@/components/ProductSearch';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useProductData } from '@/hooks/useProductData';
 import { StaleDataWarning } from '@/components/StaleDataWarning';
 import { AppHeader } from '@/components/AppHeader';
 import { HeroSection } from '@/components/HeroSection';
-import { ProductCard } from '@/components/ProductCard';
-import { CallToAction } from '@/components/CallToAction';
+import { SelectedProductsDisplay } from '@/components/SelectedProductsDisplay';
 import { AppFooter } from '@/components/AppFooter';
 import { FullProductPage } from '@/components/FullProductPage';
 
@@ -18,12 +16,9 @@ const Index = () => {
   const [selectedProductAsin, setSelectedProductAsin] = useState<string | null>(null);
   
   const {
-    filteredProducts,
-    searchableProducts,
     staleDataWarning,
     selectedRapidApiProducts,
     isLoadingRapidApi,
-    handleSearchResults,
     refreshData
   } = useProductData();
 
@@ -54,17 +49,8 @@ const Index = () => {
       <main className="container mx-auto px-6 py-8">
         <HeroSection />
 
-        {searchableProducts.length > 0 && (
-          <div className="mb-8">
-            <ProductSearch
-              products={searchableProducts}
-              onSearchResults={handleSearchResults}
-            />
-          </div>
-        )}
-
         <div className="grid gap-8 md:gap-12">
-          {filteredProducts.length === 0 ? (
+          {selectedRapidApiProducts.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
                 <h3 className="text-xl font-semibold mb-4">
@@ -72,8 +58,8 @@ const Index = () => {
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   {isLoadingRapidApi ? 
-                    'Loading selected products...' :
-                    'No products have been selected yet. Visit the admin panel to search and select products to display here.'
+                    'Loading curated products...' :
+                    'Our team is curating the best products for you. Check back soon or visit the admin panel to add products.'
                   }
                 </p>
                 {!isLoadingRapidApi && (
@@ -81,25 +67,24 @@ const Index = () => {
                     onClick={() => window.open('/admin', '_blank')}
                     className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
                   >
-                    Go to Admin Panel
+                    Admin Panel
                   </Button>
                 )}
               </CardContent>
             </Card>
           ) : (
-            filteredProducts.map((product) => (
-              <div key={product.id} onClick={() => setSelectedProductAsin(product.id.toString())}>
-                <ProductCard product={product} />
-              </div>
-            ))
+            <SelectedProductsDisplay 
+              products={selectedRapidApiProducts}
+              onProductClick={setSelectedProductAsin}
+            />
           )}
         </div>
 
-        {filteredProducts.length > 0 && (
+        {selectedRapidApiProducts.length > 0 && (
           <div className="mt-16 text-center bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl p-8 text-white">
-            <h3 className="text-2xl font-bold mb-4">Explore More Products</h3>
+            <h3 className="text-2xl font-bold mb-4">Find Your Perfect Product</h3>
             <p className="text-orange-100 mb-6 max-w-2xl mx-auto">
-              Click on any product above to view detailed information, pricing, and purchase options.
+              Browse our curated selection of top-rated products. Click on any product to view detailed information, pricing, and purchase options.
             </p>
             <Button 
               variant="secondary" 

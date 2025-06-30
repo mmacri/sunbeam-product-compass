@@ -2,48 +2,72 @@
 import { RapidApiProduct } from '@/types/rapidApi';
 
 export class ExcelService {
-  static exportToExcel(products: RapidApiProduct[], filename?: string): void {
+  static exportToExcel(products: RapidApiProduct[]): void {
     const headers = [
-      'ASIN', 'Title', 'Price', 'Original Price', 'Rating', 'Reviews', 'URL',
-      'Photo URL', 'Is Prime', 'Is Best Seller', 'Is Amazon Choice', 'Currency',
-      'Delivery', 'Sales Volume', 'Coupon', 'Availability', 'Min Offer Price',
-      'Num Offers', 'Byline', 'Unit Price', 'Unit Count', 'Climate Pledge Friendly'
+      'ASIN',
+      'Title',
+      'Price',
+      'Original Price',
+      'Unit Price',
+      'Unit Count',
+      'Currency',
+      'Star Rating',
+      'Number of Ratings',
+      'Sales Volume',
+      'URL',
+      'Photo URL',
+      'Number of Offers',
+      'Minimum Offer Price',
+      'Is Best Seller',
+      'Is Amazon Choice',
+      'Is Prime',
+      'Climate Pledge Friendly',
+      'Has Variations',
+      'Delivery',
+      'Byline',
+      'Coupon Text',
+      'Product Badge',
+      'Availability'
     ];
 
     const csvContent = [
       headers.join(','),
       ...products.map(product => [
-        product.asin,
+        `"${product.asin}"`,
         `"${product.product_title.replace(/"/g, '""')}"`,
-        product.product_price,
-        product.product_original_price || '',
-        product.product_star_rating,
-        product.product_num_ratings,
-        product.product_url,
-        product.product_photo,
-        product.is_prime ? 'Yes' : 'No',
-        product.is_best_seller ? 'Yes' : 'No',
-        product.is_amazon_choice ? 'Yes' : 'No',
-        product.currency,
-        `"${product.delivery.replace(/"/g, '""')}"`,
-        product.sales_volume || '',
-        product.coupon_text || '',
-        product.product_availability || '',
-        product.product_minimum_offer_price,
-        product.product_num_offers,
-        `"${(product.product_byline || '').replace(/"/g, '""')}"`,
-        product.unit_price,
+        `"${product.product_price}"`,
+        `"${product.product_original_price || ''}"`,
+        `"${product.unit_price}"`,
         product.unit_count,
-        product.climate_pledge_friendly ? 'Yes' : 'No'
+        `"${product.currency}"`,
+        `"${product.product_star_rating}"`,
+        product.product_num_ratings,
+        `"${product.sales_volume || ''}"`,
+        `"${product.product_url}"`,
+        `"${product.product_photo}"`,
+        product.product_num_offers,
+        `"${product.product_minimum_offer_price}"`,
+        product.is_best_seller,
+        product.is_amazon_choice,
+        product.is_prime,
+        product.climate_pledge_friendly,
+        product.has_variations,
+        `"${product.delivery}"`,
+        `"${product.product_byline || ''}"`,
+        `"${product.coupon_text || ''}"`,
+        `"${product.product_badge || ''}"`,
+        `"${product.product_availability || ''}"`
       ].join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    
     link.setAttribute('href', url);
-    link.setAttribute('download', filename || `selected-products-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `sunbeam-products-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -52,71 +76,86 @@ export class ExcelService {
   static async importFromExcel(file: File): Promise<RapidApiProduct[]> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         try {
-          const csv = e.target?.result as string;
-          const lines = csv.split('\n');
-          const headers = lines[0].split(',');
+          const text = e.target?.result as string;
+          const lines = text.split('\n');
           
+          if (lines.length < 2) {
+            throw new Error('File appears to be empty or invalid');
+          }
+
+          const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
           const products: RapidApiProduct[] = [];
-          
+
           for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const values = this.parseCSVLine(line);
             
-            const values = this.parseCSVLine(lines[i]);
             if (values.length < headers.length) continue;
-            
+
             const product: RapidApiProduct = {
-              asin: values[0],
-              product_title: values[1].replace(/^"|"$/g, '').replace(/""/g, '"'),
-              product_price: values[2],
-              product_original_price: values[3] || values[2],
-              product_star_rating: values[4],
-              product_num_ratings: parseInt(values[5]) || 0,
-              product_url: values[6],
-              product_photo: values[7],
-              is_prime: values[8] === 'Yes',
-              is_best_seller: values[9] === 'Yes',
-              is_amazon_choice: values[10] === 'Yes',
-              currency: values[11],
-              delivery: values[12].replace(/^"|"$/g, '').replace(/""/g, '"'),
-              sales_volume: values[13],
-              coupon_text: values[14],
-              product_availability: values[15],
-              product_minimum_offer_price: values[16],
-              product_num_offers: parseInt(values[17]) || 0,
-              product_byline: values[18]?.replace(/^"|"$/g, '').replace(/""/g, '"'),
-              unit_price: values[19],
-              unit_count: parseInt(values[20]) || 1,
-              climate_pledge_friendly: values[21] === 'Yes',
-              has_variations: false
+              asin: this.cleanValue(values[0]),
+              product_title: this.cleanValue(values[1]),
+              product_price: this.cleanValue(values[2]),
+              product_original_price: this.cleanValue(values[3]) || undefined,
+              unit_price: this.cleanValue(values[4]),
+              unit_count: parseInt(this.cleanValue(values[5])) || 1,
+              currency: this.cleanValue(values[6]),
+              product_star_rating: this.cleanValue(values[7]),
+              product_num_ratings: parseInt(this.cleanValue(values[8])) || 0,
+              sales_volume: this.cleanValue(values[9]) || undefined,
+              product_url: this.cleanValue(values[10]),
+              product_photo: this.cleanValue(values[11]),
+              product_num_offers: parseInt(this.cleanValue(values[12])) || 1,
+              product_minimum_offer_price: this.cleanValue(values[13]),
+              is_best_seller: this.cleanValue(values[14]).toLowerCase() === 'true',
+              is_amazon_choice: this.cleanValue(values[15]).toLowerCase() === 'true',
+              is_prime: this.cleanValue(values[16]).toLowerCase() === 'true',
+              climate_pledge_friendly: this.cleanValue(values[17]).toLowerCase() === 'true',
+              has_variations: this.cleanValue(values[18]).toLowerCase() === 'true',
+              delivery: this.cleanValue(values[19]),
+              product_byline: this.cleanValue(values[20]) || undefined,
+              coupon_text: this.cleanValue(values[21]) || undefined,
+              product_badge: this.cleanValue(values[22]) || undefined,
+              product_availability: this.cleanValue(values[23]) || undefined
             };
-            
+
             products.push(product);
           }
-          
+
           resolve(products);
         } catch (error) {
-          reject(error);
+          reject(new Error(`Failed to parse CSV file: ${error.message}`));
         }
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+
       reader.readAsText(file);
     });
   }
 
   private static parseCSVLine(line: string): string[] {
-    const result = [];
+    const result: string[] = [];
     let current = '';
     let inQuotes = false;
     
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       
-      if (char === '"' && (i === 0 || line[i-1] === ',')) {
-        inQuotes = true;
-      } else if (char === '"' && inQuotes && (i === line.length - 1 || line[i+1] === ',')) {
-        inQuotes = false;
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
       } else if (char === ',' && !inQuotes) {
         result.push(current);
         current = '';
@@ -127,5 +166,9 @@ export class ExcelService {
     
     result.push(current);
     return result;
+  }
+
+  private static cleanValue(value: string): string {
+    return value.replace(/^"|"$/g, '').trim();
   }
 }

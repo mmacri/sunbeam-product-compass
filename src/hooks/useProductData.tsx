@@ -155,6 +155,7 @@ export const useProductData = () => {
       const stored = localStorage.getItem('sunbeam-selected-rapidapi-products');
       if (stored) {
         const selectedProducts = JSON.parse(stored);
+        console.log('Loaded selected products:', selectedProducts.length);
         setSelectedRapidApiProducts(selectedProducts);
         
         const transformedProducts = selectedProducts.map(transformRapidApiProduct);
@@ -170,6 +171,7 @@ export const useProductData = () => {
   };
 
   const saveSelectedProducts = (rapidApiProducts: any[]) => {
+    console.log('Saving selected products:', rapidApiProducts.length);
     localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(rapidApiProducts));
     setSelectedRapidApiProducts(rapidApiProducts);
     
@@ -206,11 +208,11 @@ export const useProductData = () => {
   };
 
   const loadInitialData = async () => {
-    // First try to load selected products
+    // Priority 1: Load selected products for user display
     const hasSelectedProducts = loadSelectedProducts();
     
     if (!hasSelectedProducts) {
-      // Fallback to admin products
+      // Priority 2: Fallback to admin products
       const adminProducts = localStorage.getItem('sunbeam-products');
       if (adminProducts) {
         try {
@@ -226,13 +228,13 @@ export const useProductData = () => {
         }
       }
 
-      // If no admin products and API available, try RapidAPI
+      // Priority 3: If no admin products and API available, try RapidAPI
       const rapidApiKey = localStorage.getItem('rapidapi-key');
       if (rapidApiKey && realProducts.length === 0) {
         await loadProductsFromRapidApi();
       }
 
-      // Final fallback to mock data
+      // Priority 4: Final fallback to mock data
       if (realProducts.length === 0 && selectedRapidApiProducts.length === 0) {
         setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
         setProducts(mockProducts);
@@ -257,12 +259,15 @@ export const useProductData = () => {
     setStaleDataWarning(false);
     localStorage.setItem('sunbeam-last-update', new Date().getTime().toString());
     
+    // Reload selected products first
+    loadSelectedProducts();
+    
     const adminProducts = localStorage.getItem('sunbeam-products');
     if (adminProducts) {
       try {
         const parsed = JSON.parse(adminProducts);
         setRealProducts(parsed);
-        if (parsed.length > 0) {
+        if (parsed.length > 0 && selectedRapidApiProducts.length === 0) {
           const transformedProducts = parsed.map(transformAdminProduct);
           setProducts(transformedProducts);
           setSearchableProducts(parsed.map(transformToSearchableProduct));
@@ -272,7 +277,9 @@ export const useProductData = () => {
       }
     }
 
-    await loadProductsFromRapidApi();
+    if (selectedRapidApiProducts.length === 0) {
+      await loadProductsFromRapidApi();
+    }
   };
 
   const handleSearchResults = (results: SearchableProduct[]) => {

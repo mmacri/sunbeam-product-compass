@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,9 @@ import {
   Eye,
   Plus,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 import { RapidApiService } from '@/services/rapidApi';
 import { RapidApiProduct } from '@/types/rapidApi';
@@ -107,6 +110,22 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     setSelectedAsins([]);
     onShowMessage('Cleared all selections');
     onLogAction('Clear All Selections', {});
+  };
+
+  const handleSaveSelectedForUsers = () => {
+    const selectedProducts = filteredProducts.filter(p => 
+      ProductSelectionService.isProductSelected(p.asin)
+    );
+    
+    if (selectedProducts.length === 0) {
+      onShowMessage('No products selected to save for users', 'error');
+      return;
+    }
+
+    // Save selected products for user display
+    localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(selectedProducts));
+    onShowMessage(`Saved ${selectedProducts.length} products for user display`);
+    onLogAction('Save Selected Products for Users', { count: selectedProducts.length });
   };
 
   const handleExportSelected = () => {
@@ -225,6 +244,16 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
                 <Button onClick={handleClearAll} variant="outline" size="sm">
                   Clear All
                 </Button>
+                <Button 
+                  onClick={handleSaveSelectedForUsers} 
+                  variant="default" 
+                  size="sm" 
+                  disabled={selectedAsins.length === 0}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Save for Users ({selectedAsins.length})
+                </Button>
                 <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
                   <Download className="w-4 h-4 mr-1" />
                   Export Selected ({selectedAsins.length})
@@ -264,6 +293,16 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
             <CardTitle className="flex items-center justify-between">
               <span>Search Results ({selectedAsins.length} selected)</span>
               <div className="flex gap-2">
+                <Button 
+                  onClick={handleSaveSelectedForUsers} 
+                  variant="default" 
+                  size="sm" 
+                  disabled={selectedAsins.length === 0}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Save for Users
+                </Button>
                 <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
                   <Download className="w-4 h-4 mr-1" />
                   Export Selected
@@ -287,14 +326,20 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.asin}>
+                    <TableRow key={product.asin} className={ProductSelectionService.isProductSelected(product.asin) ? 'bg-green-50' : ''}>
                       <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={ProductSelectionService.isProductSelected(product.asin)}
-                          onChange={() => handleToggleSelection(product.asin)}
-                          className="w-4 h-4"
-                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleSelection(product.asin)}
+                          className="p-1"
+                        >
+                          {ProductSelectionService.isProductSelected(product.asin) ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-gray-400" />
+                          )}
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <img
