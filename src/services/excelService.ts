@@ -2,62 +2,63 @@
 import { RapidApiProduct } from '@/types/rapidApi';
 
 export class ExcelService {
-  static exportToExcel(products: RapidApiProduct[]): void {
-    const headers = [
-      'ASIN',
-      'Title',
-      'Price',
-      'Original Price',
-      'Unit Price',
-      'Unit Count',
-      'Currency',
-      'Star Rating',
-      'Number of Ratings',
-      'Sales Volume',
-      'URL',
-      'Photo URL',
-      'Number of Offers',
-      'Minimum Offer Price',
-      'Is Best Seller',
-      'Is Amazon Choice',
-      'Is Prime',
-      'Climate Pledge Friendly',
-      'Has Variations',
-      'Delivery',
-      'Byline',
-      'Coupon Text',
-      'Product Badge',
-      'Availability'
+  static exportToExcel(products: RapidApiProduct[], selectedColumns?: string[]): void {
+    const allHeaders = [
+      'asin', 'product_title', 'product_price', 'product_original_price', 'unit_price', 
+      'unit_count', 'currency', 'product_star_rating', 'product_num_ratings', 'sales_volume',
+      'product_url', 'product_photo', 'product_num_offers', 'product_minimum_offer_price',
+      'is_best_seller', 'is_amazon_choice', 'is_prime', 'climate_pledge_friendly',
+      'has_variations', 'delivery', 'product_byline', 'coupon_text', 'product_badge', 'product_availability'
     ];
 
+    const headersToUse = selectedColumns && selectedColumns.length > 0 ? selectedColumns : allHeaders;
+    
+    const headerLabels = headersToUse.map(header => {
+      const labelMap: Record<string, string> = {
+        'asin': 'ASIN',
+        'product_title': 'Title',
+        'product_price': 'Price',
+        'product_original_price': 'Original Price',
+        'unit_price': 'Unit Price',
+        'unit_count': 'Unit Count',
+        'currency': 'Currency',
+        'product_star_rating': 'Star Rating',
+        'product_num_ratings': 'Number of Ratings',
+        'sales_volume': 'Sales Volume',
+        'product_url': 'URL',
+        'product_photo': 'Photo URL',
+        'product_num_offers': 'Number of Offers',
+        'product_minimum_offer_price': 'Minimum Offer Price',
+        'is_best_seller': 'Is Best Seller',
+        'is_amazon_choice': 'Is Amazon Choice',
+        'is_prime': 'Is Prime',
+        'climate_pledge_friendly': 'Climate Pledge Friendly',
+        'has_variations': 'Has Variations',
+        'delivery': 'Delivery',
+        'product_byline': 'Byline',
+        'coupon_text': 'Coupon Text',
+        'product_badge': 'Product Badge',
+        'product_availability': 'Availability'
+      };
+      return labelMap[header] || header;
+    });
+
     const csvContent = [
-      headers.join(','),
-      ...products.map(product => [
-        `"${product.asin}"`,
-        `"${product.product_title.replace(/"/g, '""')}"`,
-        `"${product.product_price}"`,
-        `"${product.product_original_price || ''}"`,
-        `"${product.unit_price}"`,
-        product.unit_count,
-        `"${product.currency}"`,
-        `"${product.product_star_rating}"`,
-        product.product_num_ratings,
-        `"${product.sales_volume || ''}"`,
-        `"${product.product_url}"`,
-        `"${product.product_photo}"`,
-        product.product_num_offers,
-        `"${product.product_minimum_offer_price}"`,
-        product.is_best_seller,
-        product.is_amazon_choice,
-        product.is_prime,
-        product.climate_pledge_friendly,
-        product.has_variations,
-        `"${product.delivery}"`,
-        `"${product.product_byline || ''}"`,
-        `"${product.coupon_text || ''}"`,
-        `"${product.product_badge || ''}"`,
-        `"${product.product_availability || ''}"`
-      ].join(','))
+      headerLabels.join(','),
+      ...products.map(product => 
+        headersToUse.map(header => {
+          const value = (product as any)[header];
+          if (typeof value === 'string') {
+            return `"${value.replace(/"/g, '""')}"`;
+          } else if (typeof value === 'boolean') {
+            return value;
+          } else if (typeof value === 'number') {
+            return value;
+          } else {
+            return `"${value || ''}"`;
+          }
+        }).join(',')
+      )
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

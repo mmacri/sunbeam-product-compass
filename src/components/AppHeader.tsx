@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Sun, Moon, Package, Settings, List } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface AppHeaderProps {
   theme: string;
@@ -18,31 +19,54 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   isLoadingRapidApi
 }) => {
   return (
-    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-orange-200 dark:border-gray-700 sticky top-0 z-50 transition-colors duration-300">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">☀️</span>
-            </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
-              Sunbeam Reviews
-            </h1>
+          <div className="flex items-center space-x-6">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
+                Sunbeam
+              </span>
+            </Link>
+
+            <nav className="hidden md:flex items-center space-x-4">
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <List className="w-4 h-4" />
+                  Products
+                </Button>
+              </Link>
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Admin
+                </Button>
+              </Link>
+            </nav>
           </div>
+
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                {isLoadingRapidApi ? 'Loading...' : `${realProductsCount} Products`}
+              </Badge>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="dark:text-gray-300"
+              className="w-9 h-9 p-0"
             >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
             </Button>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-800">
-              {realProductsCount > 0 ? `${realProductsCount} Live Products` : 
-               isLoadingRapidApi ? 'Loading Products...' : 
-               'Product Reviews & Price Tracking'}
-            </Badge>
           </div>
         </div>
       </div>

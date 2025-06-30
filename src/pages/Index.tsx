@@ -7,13 +7,15 @@ import { useProductData } from '@/hooks/useProductData';
 import { StaleDataWarning } from '@/components/StaleDataWarning';
 import { AppHeader } from '@/components/AppHeader';
 import { HeroSection } from '@/components/HeroSection';
-import { SelectedProductsDisplay } from '@/components/SelectedProductsDisplay';
+import { UnifiedProductList } from '@/components/UnifiedProductList';
 import { AppFooter } from '@/components/AppFooter';
 import { FullProductPage } from '@/components/FullProductPage';
+import { LayoutGrid, List } from 'lucide-react';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [selectedProductAsin, setSelectedProductAsin] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   
   const {
     staleDataWarning,
@@ -59,7 +61,7 @@ const Index = () => {
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   {isLoadingRapidApi ? 
                     'Loading curated products...' :
-                    'Our team is curating the best products for you. Check back soon or visit the admin panel to add products.'
+                    'Our team is curating the best products for you. Check back soon or visit the admin panel to select products.'
                   }
                 </p>
                 {!isLoadingRapidApi && (
@@ -73,7 +75,7 @@ const Index = () => {
               </CardContent>
             </Card>
           ) : (
-            <SelectedProductsDisplay 
+            <UnifiedProductList 
               products={selectedRapidApiProducts}
               onProductClick={setSelectedProductAsin}
             />

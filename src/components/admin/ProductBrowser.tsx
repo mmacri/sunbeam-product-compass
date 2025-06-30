@@ -1,596 +1,328 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  Search,
-  Filter,
-  ExternalLink,
-  Star,
-  ShoppingCart,
-  RefreshCw,
-  Eye,
-  Plus,
-  Download,
-  FileSpreadsheet,
-  CheckCircle,
-  Circle
-} from 'lucide-react';
-import { RapidApiService } from '@/services/rapidApi';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Download, Upload, Columns, Save } from 'lucide-react';
+import { ExcelService } from '@/services/excelService';
 import { RapidApiProduct } from '@/types/rapidApi';
 import { ProductSelectionService } from '@/services/productSelection';
-import { ExcelService } from '@/services/excelService';
+import { ColumnSelector } from './ColumnSelector';
 
 interface ProductBrowserProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
   onLogAction: (action: string, details: any) => void;
-  onAddProduct?: (product: RapidApiProduct) => void;
 }
 
 export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   onShowMessage,
-  onLogAction,
-  onAddProduct
+  onLogAction
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<RapidApiProduct[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('BEST_SELLERS');
-  const [filterBy, setFilterBy] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<RapidApiProduct | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('rating-desc');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedAsins, setSelectedAsins] = useState<string[]>([]);
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
 
-  const searchProducts = async () => {
-    if (!searchQuery.trim()) {
-      onShowMessage('Please enter a search query', 'error');
-      return;
+  useEffect(() => {
+    loadProducts();
+    loadSelectedAsins();
+  }, []);
+
+  useEffect(() => {
+    const savedColumns = localStorage.getItem('sunbeam-selected-columns');
+    if (savedColumns) {
+      setSelectedColumns(JSON.parse(savedColumns));
     }
+  }, []);
 
-    setLoading(true);
-    try {
-      const result = await RapidApiService.searchProducts(searchQuery, {
-        sortBy,
-        country: 'US',
-        page: 1
-      });
-
-      setProducts(result.products || []);
-      onLogAction('Product Search', { 
-        query: searchQuery, 
-        totalResults: result.total_products,
-        sortBy 
-      });
-      onShowMessage(`Found ${result.total_products} products for "${searchQuery}"`);
-    } catch (error) {
-      onShowMessage(`Search failed: ${error.message}`, 'error');
-      onLogAction('Product Search Failed', { 
-        query: searchQuery, 
-        error: error.message 
-      });
-    } finally {
-      setLoading(false);
+  const loadProducts = () => {
+    const storedProducts = localStorage.getItem('sunbeam-products');
+    if (storedProducts) {
+      setProducts(JSON.parse(storedProducts));
     }
+  };
+
+  const loadSelectedAsins = () => {
+    const selected = ProductSelectionService.getSelectedAsins();
+    setSelectedAsins(selected);
   };
 
   const filteredProducts = useMemo(() => {
-    if (!filterBy) return products;
-    
-    return products.filter(product => {
-      const searchText = `${product.product_title} ${product.product_byline || ''}`.toLowerCase();
-      return searchText.includes(filterBy.toLowerCase());
-    });
-  }, [products, filterBy]);
+    let filtered = [...products];
 
-  const handleToggleSelection = (asin: string) => {
-    ProductSelectionService.toggleProduct(asin);
-    setSelectedAsins(ProductSelectionService.getSelectedAsins());
-    onLogAction('Product Selection Toggled', { asin });
-  };
-
-  const handleSelectAll = () => {
-    const asins = filteredProducts.map(p => p.asin);
-    ProductSelectionService.selectAll(asins);
-    setSelectedAsins(ProductSelectionService.getSelectedAsins());
-    onShowMessage(`Selected all ${asins.length} products`);
-    onLogAction('Select All Products', { count: asins.length });
-  };
-
-  const handleClearAll = () => {
-    ProductSelectionService.clearAll();
-    setSelectedAsins([]);
-    onShowMessage('Cleared all selections');
-    onLogAction('Clear All Selections', {});
-  };
-
-  const handleSaveSelectedForUsers = () => {
-    const selectedProducts = filteredProducts.filter(p => 
-      ProductSelectionService.isProductSelected(p.asin)
-    );
-    
-    if (selectedProducts.length === 0) {
-      onShowMessage('No products selected to save for users', 'error');
-      return;
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.product_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.product_byline && product.product_byline.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
     }
 
-    // Save selected products for user display
-    localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(selectedProducts));
-    onShowMessage(`Saved ${selectedProducts.length} products for user display`);
-    onLogAction('Save Selected Products for Users', { count: selectedProducts.length });
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(product => {
+        switch (categoryFilter) {
+          case 'best-sellers':
+            return product.is_best_seller;
+          case 'amazon-choice':
+            return product.is_amazon_choice;
+          case 'prime':
+            return product.is_prime;
+          case 'eco-friendly':
+            return product.climate_pledge_friendly;
+          default:
+            return true;
+        }
+      });
+    }
+
+    switch (sortBy) {
+      case 'price-asc':
+        filtered.sort((a, b) => parseFloat(a.product_price.replace(/[^0-9.]/g, '')) - parseFloat(b.product_price.replace(/[^0-9.]/g, '')));
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => parseFloat(b.product_price.replace(/[^0-9.]/g, '')) - parseFloat(a.product_price.replace(/[^0-9.]/g, '')));
+        break;
+      case 'rating-desc':
+        filtered.sort((a, b) => parseFloat(b.product_star_rating || '0') - parseFloat(a.product_star_rating || '0'));
+        break;
+      case 'rating-asc':
+        filtered.sort((a, b) => parseFloat(a.product_star_rating || '0') - parseFloat(b.product_star_rating || '0'));
+        break;
+      case 'reviews-desc':
+        filtered.sort((a, b) => (b.product_num_ratings || 0) - (a.product_num_ratings || 0));
+        break;
+      case 'alphabetical':
+        filtered.sort((a, b) => a.product_title.localeCompare(b.product_title));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [products, searchTerm, sortBy, categoryFilter]);
+
+  const handleColumnSave = (columns: string[]) => {
+    setSelectedColumns(columns);
+    setShowColumnSelector(false);
+    onShowMessage('Column selection saved successfully');
   };
 
-  const handleExportSelected = () => {
-    const selectedProducts = filteredProducts.filter(p => 
-      ProductSelectionService.isProductSelected(p.asin)
-    );
-    
+  const exportSelectedProducts = () => {
+    const selectedProducts = products.filter(p => selectedAsins.includes(p.asin));
     if (selectedProducts.length === 0) {
       onShowMessage('No products selected for export', 'error');
       return;
     }
 
-    ExcelService.exportToExcel(selectedProducts);
-    onShowMessage(`Exported ${selectedProducts.length} selected products`);
-    onLogAction('Export Selected Products', { count: selectedProducts.length });
-  };
-
-  const handleImportExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    ExcelService.importFromExcel(file)
-      .then(importedProducts => {
-        setProducts(importedProducts);
-        onShowMessage(`Imported ${importedProducts.length} products from Excel`);
-        onLogAction('Import Products from Excel', { count: importedProducts.length });
-      })
-      .catch(error => {
-        onShowMessage(`Import failed: ${error.message}`, 'error');
-        onLogAction('Import Failed', { error: error.message });
+    // Filter products based on selected columns
+    const filteredProducts = selectedProducts.map(product => {
+      const filtered: any = {};
+      selectedColumns.forEach(column => {
+        if (product.hasOwnProperty(column)) {
+          filtered[column] = (product as any)[column];
+        }
       });
-    
-    // Clear the input
-    event.target.value = '';
+      return filtered;
+    });
+
+    ExcelService.exportToExcel(filteredProducts.length > 0 ? filteredProducts : selectedProducts, selectedColumns);
+    onShowMessage(`Exported ${selectedProducts.length} products to Excel`);
+    onLogAction('export_products', { count: selectedProducts.length, columns: selectedColumns });
   };
 
-  React.useEffect(() => {
-    setSelectedAsins(ProductSelectionService.getSelectedAsins());
-  }, []);
-
-  const formatPrice = (price: string) => {
-    return price || 'N/A';
-  };
-
-  const formatRating = (rating: string, numRatings: number) => {
-    return (
-      <div className="flex items-center gap-1">
-        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        <span className="font-medium">{rating || 'N/A'}</span>
-        <span className="text-gray-500">({numRatings?.toLocaleString() || 0})</span>
-      </div>
-    );
-  };
-
-  const handleAddProduct = (product: RapidApiProduct) => {
-    if (onAddProduct) {
-      onAddProduct(product);
-      onShowMessage(`Added "${product.product_title}" to tracking`);
-      onLogAction('Product Added from Browser', { 
-        asin: product.asin, 
-        title: product.product_title 
-      });
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      onShowMessage('No file selected', 'error');
+      return;
     }
+
+    try {
+      const importedProducts = await ExcelService.importFromExcel(file);
+      setProducts(importedProducts);
+      localStorage.setItem('sunbeam-products', JSON.stringify(importedProducts));
+      onShowMessage(`Imported ${importedProducts.length} products`);
+      onLogAction('import_products', { count: importedProducts.length });
+    } catch (error) {
+      onShowMessage(`Import failed: ${error.message}`, 'error');
+    }
+  };
+
+  const toggleSelection = (asin: string) => {
+    ProductSelectionService.toggleProduct(asin);
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+  };
+
+  const isSelected = (asin: string): boolean => {
+    return selectedAsins.includes(asin);
+  };
+
+  const selectAllFiltered = () => {
+    const asins = filteredProducts.map(p => p.asin);
+    ProductSelectionService.selectAll(asins);
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+    onShowMessage(`Selected all ${filteredProducts.length} filtered products`);
+    onLogAction('select_all_filtered', { count: filteredProducts.length });
+  };
+
+  const clearSelection = () => {
+    ProductSelectionService.clearAll();
+    setSelectedAsins([]);
+    onShowMessage('Cleared all selections');
+    onLogAction('clear_selection', {});
+  };
+
+  const saveSelectedForUsers = () => {
+    const selectedProducts = products.filter(p => selectedAsins.includes(p.asin));
+    localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(selectedProducts));
+    onShowMessage(`Saved ${selectedProducts.length} selected products for users`);
+    onLogAction('save_selected_for_users', { count: selectedProducts.length });
   };
 
   return (
     <div className="space-y-6">
-      {/* Search Controls */}
+      {/* Search and Controls */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="w-5 h-5" />
-            Product Browser & Selection
+            Product Browser
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search for products (e.g., massage gun, laptop, headphones)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
-              />
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border rounded-md"
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rating-desc">Highest Rated</SelectItem>
+                <SelectItem value="rating-asc">Lowest Rated</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="reviews-desc">Most Reviews</SelectItem>
+                <SelectItem value="alphabetical">A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                <SelectItem value="best-sellers">Best Sellers</SelectItem>
+                <SelectItem value="amazon-choice">Amazon's Choice</SelectItem>
+                <SelectItem value="prime">Prime Eligible</SelectItem>
+                <SelectItem value="eco-friendly">Eco-Friendly</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              onClick={() => setShowColumnSelector(!showColumnSelector)}
+              variant="outline"
+              className="flex items-center gap-2"
             >
-              <option value="BEST_SELLERS">Best Sellers</option>
-              <option value="PRICE_LOW_TO_HIGH">Price: Low to High</option>
-              <option value="PRICE_HIGH_TO_LOW">Price: High to Low</option>
-              <option value="NEWEST_ARRIVALS">Newest</option>
-              <option value="AVG_CUSTOMER_REVIEW">Top Rated</option>
-            </select>
-            <Button onClick={searchProducts} disabled={loading}>
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              Search
+              <Columns className="w-4 h-4" />
+              Columns
             </Button>
           </div>
 
-          {products.length > 0 && (
-            <div className="flex items-center gap-4 flex-wrap">
-              <Input
-                placeholder="Filter results..."
-                value={filterBy}
-                onChange={(e) => setFilterBy(e.target.value)}
-                className="max-w-xs"
-              />
-              
-              <div className="flex gap-2">
-                <Button onClick={handleSelectAll} variant="outline" size="sm">
-                  Select All ({filteredProducts.length})
-                </Button>
-                <Button onClick={handleClearAll} variant="outline" size="sm">
-                  Clear All
-                </Button>
-                <Button 
-                  onClick={handleSaveSelectedForUsers} 
-                  variant="default" 
-                  size="sm" 
-                  disabled={selectedAsins.length === 0}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Save for Users ({selectedAsins.length})
-                </Button>
-                <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Export Selected ({selectedAsins.length})
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label htmlFor="excel-import" className="cursor-pointer">
-                  <Button variant="outline" size="sm" asChild>
-                    <span>
-                      <FileSpreadsheet className="w-4 h-4 mr-1" />
-                      Import Excel
-                    </span>
-                  </Button>
-                </label>
-                <input
-                  id="excel-import"
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleImportExcel}
-                  className="hidden"
-                />
-              </div>
-              
-              <span className="text-sm text-gray-600">
-                Showing {filteredProducts.length} of {products.length} products
-              </span>
+          {showColumnSelector && (
+            <div className="mb-4">
+              <ColumnSelector onSave={handleColumnSave} />
             </div>
           )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={selectAllFiltered}
+              variant="outline"
+              size="sm"
+              disabled={filteredProducts.length === 0}
+            >
+              Select All ({filteredProducts.length})
+            </Button>
+            <Button
+              onClick={clearSelection}
+              variant="outline"
+              size="sm"
+              disabled={selectedAsins.length === 0}
+            >
+              Clear Selection
+            </Button>
+            <Button
+              onClick={exportSelectedProducts}
+              variant="outline"
+              size="sm"
+              disabled={selectedAsins.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export Selected ({selectedAsins.length})
+            </Button>
+            <Button
+              onClick={saveSelectedForUsers}
+              size="sm"
+              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+              disabled={selectedAsins.length === 0}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save for Users ({selectedAsins.length})
+            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleImport}
+                className="hidden"
+                id="import-file"
+              />
+              <Button
+                onClick={() => document.getElementById('import-file')?.click()}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import Excel
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Products Table */}
-      {filteredProducts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Search Results ({selectedAsins.length} selected)</span>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleSaveSelectedForUsers} 
-                  variant="default" 
-                  size="sm" 
-                  disabled={selectedAsins.length === 0}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Save for Users
-                </Button>
-                <Button onClick={handleExportSelected} variant="outline" size="sm" disabled={selectedAsins.length === 0}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Export Selected
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">Select</TableHead>
-                    <TableHead className="w-16">Image</TableHead>
-                    <TableHead className="min-w-64">Product Details</TableHead>
-                    <TableHead>Pricing</TableHead>
-                    <TableHead>Rating & Reviews</TableHead>
-                    <TableHead>Features & Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product) => (
-                    <TableRow key={product.asin} className={ProductSelectionService.isProductSelected(product.asin) ? 'bg-green-50' : ''}>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleSelection(product.asin)}
-                          className="p-1"
-                        >
-                          {ProductSelectionService.isProductSelected(product.asin) ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-gray-400" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <img
-                          src={product.product_photo}
-                          alt={product.product_title}
-                          className="w-12 h-12 object-contain rounded"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <h3 className="font-medium text-sm leading-tight">
-                            {product.product_title}
-                          </h3>
-                          {product.product_byline && (
-                            <p className="text-xs text-gray-600">{product.product_byline}</p>
-                          )}
-                          <div className="text-xs text-gray-500">
-                            ASIN: {product.asin}
-                          </div>
-                          <div className="flex gap-1 flex-wrap">
-                            {product.is_best_seller && (
-                              <Badge variant="secondary" className="text-xs">Best Seller</Badge>
-                            )}
-                            {product.is_amazon_choice && (
-                              <Badge variant="secondary" className="text-xs">Amazon's Choice</Badge>
-                            )}
-                            {product.is_prime && (
-                              <Badge variant="outline" className="text-xs">Prime</Badge>
-                            )}
-                            {product.climate_pledge_friendly && (
-                              <Badge variant="outline" className="text-xs">Eco-Friendly</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-bold text-green-600">
-                            {formatPrice(product.product_price)}
-                          </div>
-                          {product.product_original_price && 
-                            product.product_original_price !== product.product_price && (
-                            <div className="text-xs text-gray-500 line-through">
-                              {formatPrice(product.product_original_price)}
-                            </div>
-                          )}
-                          {product.unit_count > 1 && (
-                            <div className="text-xs text-gray-600">
-                              {formatPrice(product.unit_price)} each
-                            </div>
-                          )}
-                          {product.product_num_offers > 1 && (
-                            <div className="text-xs text-blue-600">
-                              {product.product_num_offers} offers from {formatPrice(product.product_minimum_offer_price)}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {formatRating(product.product_star_rating, product.product_num_ratings)}
-                          {product.sales_volume && (
-                            <div className="text-xs text-blue-600">{product.sales_volume}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 text-xs">
-                          {product.coupon_text && (
-                            <div className="text-green-600 font-medium">{product.coupon_text}</div>
-                          )}
-                          {product.delivery && (
-                            <div className="text-gray-600">{product.delivery}</div>
-                          )}
-                          {product.product_availability && (
-                            <div className="text-gray-600">{product.product_availability}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedProduct(product)}
-                            title="View detailed overview"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => window.open(product.product_url, '_blank')}
-                            title="View on Amazon"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                          {onAddProduct && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleAddProduct(product)}
-                              title="Add to tracking"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Product Overview Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <CardHeader className="flex flex-row items-center justify-between border-b">
-              <CardTitle>Complete Product Overview</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedProduct(null)}
-              >
-                ✕
-              </Button>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Product Image and Basic Info */}
-                <div className="space-y-4">
-                  <img
-                    src={selectedProduct.product_photo}
-                    alt={selectedProduct.product_title}
-                    className="w-full max-w-md mx-auto rounded-lg"
+      {/* Products Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProducts.map((product) => (
+          <Card key={product.asin} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardContent className="p-4">
+              <div className="flex items-start">
+                <div className="mr-4">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded text-orange-500 focus:ring-orange-500"
+                    checked={isSelected(product.asin)}
+                    onChange={() => toggleSelection(product.asin)}
                   />
-                  <div className="space-y-2">
-                    <h1 className="text-xl font-bold">{selectedProduct.product_title}</h1>
-                    {selectedProduct.product_byline && (
-                      <p className="text-gray-600">{selectedProduct.product_byline}</p>
-                    )}
-                  </div>
                 </div>
-
-                {/* Detailed Information */}
-                <div className="space-y-6">
-                  {/* Pricing Information */}
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-green-800 mb-2">Pricing Details</h3>
-                    <div className="space-y-2">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatPrice(selectedProduct.product_price)}
-                      </div>
-                      {selectedProduct.product_original_price && 
-                        selectedProduct.product_original_price !== selectedProduct.product_price && (
-                        <div className="text-gray-500 line-through">
-                          Original: {formatPrice(selectedProduct.product_original_price)}
-                        </div>
-                      )}
-                      {selectedProduct.unit_count > 1 && (
-                        <div className="text-sm">
-                          Unit Price: {formatPrice(selectedProduct.unit_price)} ({selectedProduct.unit_count} units)
-                        </div>
-                      )}
-                      {selectedProduct.coupon_text && (
-                        <div className="text-green-600 font-medium bg-green-100 p-2 rounded">
-                          {selectedProduct.coupon_text}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Reviews and Rating */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-blue-800 mb-2">Customer Reviews</h3>
-                    <div className="space-y-2">
-                      {formatRating(selectedProduct.product_star_rating, selectedProduct.product_num_ratings)}
-                      {selectedProduct.sales_volume && (
-                        <div className="text-blue-600 font-medium">{selectedProduct.sales_volume}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 mb-2">Product Information</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div><strong>ASIN:</strong> {selectedProduct.asin}</div>
-                      <div><strong>Currency:</strong> {selectedProduct.currency}</div>
-                      <div><strong>Available Offers:</strong> {selectedProduct.product_num_offers}</div>
-                      <div><strong>Min Offer Price:</strong> {formatPrice(selectedProduct.product_minimum_offer_price)}</div>
-                      <div><strong>Delivery:</strong> {selectedProduct.delivery}</div>
-                      <div><strong>Availability:</strong> {selectedProduct.product_availability || 'In Stock'}</div>
-                    </div>
-                  </div>
-
-                  {/* Special Features */}
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-purple-800 mb-2">Special Features</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProduct.is_best_seller && (
-                        <Badge className="bg-orange-100 text-orange-800">🏆 Best Seller</Badge>
-                      )}
-                      {selectedProduct.is_amazon_choice && (
-                        <Badge className="bg-blue-100 text-blue-800">⭐ Amazon's Choice</Badge>
-                      )}
-                      {selectedProduct.is_prime && (
-                        <Badge className="bg-blue-100 text-blue-800">🚚 Prime Eligible</Badge>
-                      )}
-                      {selectedProduct.climate_pledge_friendly && (
-                        <Badge className="bg-green-100 text-green-800">🌱 Climate Pledge Friendly</Badge>
-                      )}
-                      {selectedProduct.has_variations && (
-                        <Badge className="bg-gray-100 text-gray-800">🔄 Has Variations</Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 pt-4 border-t">
-                    <Button
-                      onClick={() => window.open(selectedProduct.product_url, '_blank')}
-                      className="flex-1"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View on Amazon
-                    </Button>
-                    {onAddProduct && (
-                      <Button
-                        onClick={() => {
-                          handleAddProduct(selectedProduct);
-                          setSelectedProduct(null);
-                        }}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add to Tracking
-                      </Button>
-                    )}
-                  </div>
+                <div>
+                  <h3 className="text-lg font-semibold">{product.product_title}</h3>
+                  <p className="text-gray-600">{product.product_price}</p>
                 </div>
               </div>
             </CardContent>
-          </div>
-        </div>
-      )}
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
