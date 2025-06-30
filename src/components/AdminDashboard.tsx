@@ -6,13 +6,15 @@ import {
   FileText, 
   BarChart3,
   Activity,
-  Eye
+  Eye,
+  Search
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { TemplateManagement } from '@/components/admin/TemplateManagement';
 import { ReportsAndLogs } from '@/components/admin/ReportsAndLogs';
 import { AdminSettings } from '@/components/admin/AdminSettings';
+import { ProductBrowser } from '@/components/admin/ProductBrowser';
 
 interface Product {
   id: string;
@@ -102,10 +104,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </header>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Products
+            </TabsTrigger>
+            <TabsTrigger value="browse" className="flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              Browse
             </TabsTrigger>
             <TabsTrigger value="template" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -131,6 +137,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onProductsChange={saveProducts}
               onEditProduct={onEditProduct}
               onDeleteProduct={onDeleteProduct}
+              onShowMessage={showMessage}
+              onLogAction={logAction}
+            />
+          </TabsContent>
+
+          <TabsContent value="browse" className="space-y-6">
+            <ProductBrowser
               onShowMessage={showMessage}
               onLogAction={logAction}
             />
