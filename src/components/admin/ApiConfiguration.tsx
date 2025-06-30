@@ -75,7 +75,6 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
     try {
       console.log('Testing API with key:', `${rapidApiKey.substring(0, 10)}...`);
       
-      // Test with a simple search query that matches the curl example
       const testQuery = 'massage gun';
       RapidApiService.setApiKey(rapidApiKey);
       
@@ -90,17 +89,20 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
       
       console.log('API test result:', result);
       
-      if (result && (result.status === 'OK' || result.products)) {
-        const productCount = result.total_products || result.products?.length || 0;
+      // Check for successful response with the correct data structure
+      if (result && result.status === 'OK' && result.products && Array.isArray(result.products)) {
+        const productCount = result.total_products || result.products.length;
         setTestResult('success');
-        onShowMessage(`API test successful! Found ${productCount} products for "${testQuery}".`);
+        onShowMessage(`API test successful! Found ${productCount} products for "${testQuery}". First product: ${result.products[0]?.product_title || 'No title'}`);
         onLogAction('API Test Successful', { 
           testQuery, 
           totalProducts: productCount,
-          sampleProduct: result.products?.[0]?.product_title || 'No products found'
+          sampleProduct: result.products[0]?.product_title || 'No products found',
+          responseStatus: result.status
         });
       } else {
-        throw new Error('Invalid response format or no data returned');
+        console.error('Unexpected response format:', result);
+        throw new Error(`Invalid response format. Expected products array but got: ${JSON.stringify(result)}`);
       }
     } catch (error) {
       console.error('API test failed:', error);
@@ -119,7 +121,6 @@ export const ApiConfiguration: React.FC<ApiConfigurationProps> = ({
     setTestResult(null);
     setTestError('');
     if (!enabled) {
-      // Clear API key when disabling
       RapidApiService.setApiKey('');
     }
   };

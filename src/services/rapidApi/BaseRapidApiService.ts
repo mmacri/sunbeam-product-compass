@@ -17,10 +17,7 @@ export abstract class BaseRapidApiService {
     const url = `${this.baseUrl}${endpoint}?${queryString}`;
 
     console.log('Making RapidAPI request to:', url);
-    console.log('Request headers:', {
-      'x-rapidapi-key': `${this.apiKey.substring(0, 10)}...`,
-      'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
-    });
+    console.log('Request params:', params);
 
     try {
       const response = await fetch(url, {
@@ -33,7 +30,6 @@ export abstract class BaseRapidApiService {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       const responseText = await response.text();
       console.log('Raw response:', responseText);
@@ -47,7 +43,6 @@ export abstract class BaseRapidApiService {
             errorMessage += ` - ${errorData.message}`;
           }
         } catch (e) {
-          // If response isn't JSON, include the raw text
           if (responseText) {
             errorMessage += ` - ${responseText}`;
           }
@@ -64,6 +59,27 @@ export abstract class BaseRapidApiService {
       }
 
       console.log('Parsed response data:', data);
+
+      // Handle the nested data structure from RapidAPI
+      if (data.status === 'OK' && data.data) {
+        // For search and category endpoints, products are in data.products
+        if (data.data.products) {
+          return {
+            ...data.data,
+            status: data.status,
+            request_id: data.request_id,
+            total_products: data.data.total_products,
+            products: data.data.products
+          };
+        }
+        // For product details, the data is directly in data
+        return {
+          ...data.data,
+          status: data.status,
+          request_id: data.request_id
+        };
+      }
+
       return data;
     } catch (error) {
       console.error('RapidAPI request error:', error);
