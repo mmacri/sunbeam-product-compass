@@ -40,9 +40,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </Button>
               </Link>
               <Link to="/admin">
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40">
                   <Settings className="w-4 h-4" />
-                  Admin
+                  Admin Panel
                 </Button>
               </Link>
             </nav>

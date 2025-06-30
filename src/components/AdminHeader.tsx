@@ -2,8 +2,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Moon, Sun } from 'lucide-react';
+import { Settings, Moon, Sun, Package, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Link } from 'react-router-dom';
 
 export const AdminHeader: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -21,6 +22,12 @@ export const AdminHeader: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center space-x-4">
+            <Link to="/">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                View Products
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
