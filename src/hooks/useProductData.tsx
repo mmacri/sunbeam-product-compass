@@ -1,7 +1,17 @@
+
 import { useState, useEffect } from 'react';
 import { mockProducts } from '@/utils/mockData';
-import { RapidApiService } from '@/services/rapidApi';
-import { ProductSelectionService } from '@/services/productSelection';
+import { useSelectedProducts } from './useSelectedProducts';
+import { useAdminProducts } from './useAdminProducts';
+import { useRapidApiProducts } from './useRapidApiProducts';
+import { useStaleDataWarning } from './useStaleDataWarning';
+import {
+  transformRapidApiProduct,
+  transformRapidApiToSearchableProduct,
+  transformAdminProduct,
+  transformToSearchableProduct,
+  transformMockToSearchableProduct
+} from '@/utils/productTransformers';
 
 interface SearchableProduct {
   id: string;
@@ -34,204 +44,35 @@ export const useProductData = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchableProducts, setSearchableProducts] = useState<SearchableProduct[]>([]);
-  const [staleDataWarning, setStaleDataWarning] = useState(false);
-  const [realProducts, setRealProducts] = useState<any[]>([]);
-  const [isLoadingRapidApi, setIsLoadingRapidApi] = useState(false);
-  const [selectedRapidApiProducts, setSelectedRapidApiProducts] = useState<any[]>([]);
 
-  const transformRapidApiProduct = (rapidProduct: any): Product => {
-    return {
-      id: rapidProduct.asin,
-      title: rapidProduct.product_title,
-      currentPrice: rapidProduct.product_price,
-      originalPrice: rapidProduct.product_original_price || rapidProduct.product_price,
-      rating: parseFloat(rapidProduct.product_star_rating) || 4.0,
-      reviews: rapidProduct.product_num_ratings || 0,
-      category: 'Electronics',
-      description: `${rapidProduct.product_title} - ${rapidProduct.product_byline || 'Quality product from Amazon marketplace'}`,
-      keyFeatures: [
-        'Amazon Prime eligible',
-        rapidProduct.is_best_seller ? 'Best Seller' : 'Popular choice',
-        rapidProduct.is_amazon_choice ? 'Amazon\'s Choice' : 'Highly rated',
-        'Fast delivery available'
-      ],
-      specs: {
-        'ASIN': rapidProduct.asin,
-        'Price': rapidProduct.product_price,
-        'Rating': `${rapidProduct.product_star_rating}/5 (${rapidProduct.product_num_ratings} reviews)`,
-        'Availability': rapidProduct.product_availability || 'In Stock'
-      },
-      stores: [
-        { name: 'Amazon', url: rapidProduct.product_url }
-      ],
-      priceHistory: [
-        { date: new Date().toISOString().split('T')[0], price: rapidProduct.product_price, store: 'Amazon' }
-      ]
-    };
-  };
-
-  const transformRapidApiToSearchableProduct = (rapidProduct: any): SearchableProduct => {
-    return {
-      id: rapidProduct.asin,
-      title: rapidProduct.product_title,
-      price: rapidProduct.product_price,
-      category: 'Electronics',
-      categories: ['Electronics'],
-      metaTags: [
-        rapidProduct.is_best_seller ? 'best-seller' : '',
-        rapidProduct.is_amazon_choice ? 'amazon-choice' : '',
-        rapidProduct.is_prime ? 'prime' : ''
-      ].filter(Boolean),
-      searchTerms: rapidProduct.product_title.toLowerCase().split(' '),
-      tags: [
-        rapidProduct.is_best_seller ? 'Best Seller' : '',
-        rapidProduct.is_amazon_choice ? 'Amazon\'s Choice' : '',
-        rapidProduct.is_prime ? 'Prime' : ''
-      ].filter(Boolean),
-      lastUpdated: new Date().toISOString()
-    };
-  };
-
-  const transformAdminProduct = (adminProduct: any): Product => {
-    return {
-      id: adminProduct.id,
-      title: adminProduct.title,
-      currentPrice: adminProduct.price,
-      originalPrice: adminProduct.price,
-      rating: 4.5,
-      reviews: 128,
-      category: adminProduct.category || 'General',
-      description: `Comprehensive review and analysis of ${adminProduct.title}. Track pricing, compare features, and make informed purchasing decisions.`,
-      keyFeatures: [
-        'Real-time price tracking',
-        'Expert analysis and review',
-        'Price history monitoring',
-        'Multi-store comparison'
-      ],
-      specs: {
-        'Last Updated': new Date(adminProduct.lastUpdated).toLocaleDateString(),
-        'Price Alert Threshold': adminProduct.threshold > 0 ? `$${adminProduct.threshold}` : 'Not set',
-        'Tags': adminProduct.tags.join(', ') || 'None'
-      },
-      stores: [
-        { name: 'Original Store', url: adminProduct.url }
-      ],
-      priceHistory: [
-        { date: new Date().toISOString().split('T')[0], price: adminProduct.price, store: 'Current' }
-      ]
-    };
-  };
-
-  const transformToSearchableProduct = (adminProduct: any): SearchableProduct => {
-    return {
-      id: adminProduct.id,
-      title: adminProduct.title,
-      price: adminProduct.price,
-      category: adminProduct.category || 'General',
-      categories: adminProduct.categories || [],
-      metaTags: adminProduct.metaTags || [],
-      searchTerms: adminProduct.searchTerms || [],
-      tags: adminProduct.tags || [],
-      lastUpdated: adminProduct.lastUpdated
-    };
-  };
-
-  const transformMockToSearchableProduct = (mockProduct: any): SearchableProduct => {
-    return {
-      id: mockProduct.id.toString(),
-      title: mockProduct.title,
-      price: mockProduct.currentPrice,
-      category: mockProduct.category,
-      categories: [mockProduct.category],
-      metaTags: ['premium', 'highly-rated'],
-      searchTerms: mockProduct.title.toLowerCase().split(' '),
-      tags: ['featured', 'popular'],
-      lastUpdated: new Date().toISOString()
-    };
-  };
-
-  const loadSelectedProducts = () => {
-    try {
-      const stored = localStorage.getItem('sunbeam-selected-rapidapi-products');
-      if (stored) {
-        const selectedProducts = JSON.parse(stored);
-        console.log('Loaded selected products:', selectedProducts.length);
-        setSelectedRapidApiProducts(selectedProducts);
-        
-        const transformedProducts = selectedProducts.map(transformRapidApiProduct);
-        setProducts(transformedProducts);
-        setFilteredProducts(transformedProducts);
-        setSearchableProducts(selectedProducts.map(transformRapidApiToSearchableProduct));
-        return true;
-      }
-    } catch (error) {
-      console.error('Failed to load selected products:', error);
-    }
-    return false;
-  };
-
-  const saveSelectedProducts = (rapidApiProducts: any[]) => {
-    console.log('Saving selected products:', rapidApiProducts.length);
-    localStorage.setItem('sunbeam-selected-rapidapi-products', JSON.stringify(rapidApiProducts));
-    setSelectedRapidApiProducts(rapidApiProducts);
-    
-    const transformedProducts = rapidApiProducts.map(transformRapidApiProduct);
-    setProducts(transformedProducts);
-    setFilteredProducts(transformedProducts);
-    setSearchableProducts(rapidApiProducts.map(transformRapidApiToSearchableProduct));
-  };
-
-  const loadProductsFromRapidApi = async () => {
-    const rapidApiKey = localStorage.getItem('rapidapi-key');
-    if (!rapidApiKey) return;
-
-    setIsLoadingRapidApi(true);
-    try {
-      RapidApiService.setApiKey(rapidApiKey);
-      const searchResults = await RapidApiService.searchProducts('best sellers', {
-        sortBy: 'BEST_SELLERS',
-        country: 'US',
-        page: 1
-      });
-
-      if (searchResults.products && searchResults.products.length > 0) {
-        const transformedProducts = searchResults.products.slice(0,10).map(transformRapidApiProduct);
-        setProducts(transformedProducts);
-        setFilteredProducts(transformedProducts);
-        setSearchableProducts(searchResults.products.slice(0,10).map(transformRapidApiToSearchableProduct));
-      }
-    } catch (error) {
-      console.error('Failed to load products from RapidAPI:', error);
-    } finally {
-      setIsLoadingRapidApi(false);
-    }
-  };
+  const { selectedRapidApiProducts, loadSelectedProducts, saveSelectedProducts } = useSelectedProducts();
+  const { realProducts, setRealProducts, loadAdminProducts } = useAdminProducts();
+  const { isLoadingRapidApi, loadProductsFromRapidApi } = useRapidApiProducts();
+  const { staleDataWarning, refreshData: refreshStaleData } = useStaleDataWarning();
 
   const loadInitialData = async () => {
     // Priority 1: Load selected products for user display
-    const hasSelectedProducts = loadSelectedProducts();
+    const selectedProducts = loadSelectedProducts();
     
-    if (!hasSelectedProducts) {
+    if (!selectedProducts) {
       // Priority 2: Fallback to admin products
-      const adminProducts = localStorage.getItem('sunbeam-products');
-      if (adminProducts) {
-        try {
-          const parsed = JSON.parse(adminProducts);
-          setRealProducts(parsed);
-          if (parsed.length > 0) {
-            const transformedProducts = parsed.map(transformAdminProduct);
-            setProducts(transformedProducts);
-            setSearchableProducts(parsed.map(transformToSearchableProduct));
-          }
-        } catch (error) {
-          console.error('Failed to load real products:', error);
-        }
+      const adminProducts = loadAdminProducts();
+      if (adminProducts.length > 0) {
+        const transformedProducts = adminProducts.map(transformAdminProduct);
+        setProducts(transformedProducts);
+        setSearchableProducts(adminProducts.map(transformToSearchableProduct));
       }
 
       // Priority 3: If no admin products and API available, try RapidAPI
       const rapidApiKey = localStorage.getItem('rapidapi-key');
       if (rapidApiKey && realProducts.length === 0) {
-        await loadProductsFromRapidApi();
+        const rapidProducts = await loadProductsFromRapidApi();
+        if (rapidProducts.length > 0) {
+          const transformedProducts = rapidProducts.map(transformRapidApiProduct);
+          setProducts(transformedProducts);
+          setFilteredProducts(transformedProducts);
+          setSearchableProducts(rapidProducts.map(transformRapidApiToSearchableProduct));
+        }
       }
 
       // Priority 4: Final fallback to mock data
@@ -240,45 +81,35 @@ export const useProductData = () => {
         setProducts(mockProducts);
         setFilteredProducts(mockProducts);
       }
-    }
-
-    const lastUpdate = localStorage.getItem('sunbeam-last-update');
-    const now = new Date().getTime();
-    const oneDay = 24 * 60 * 60 * 1000;
-    
-    if (lastUpdate && (now - parseInt(lastUpdate)) > oneDay) {
-      setStaleDataWarning(true);
-    }
-
-    if (!lastUpdate) {
-      localStorage.setItem('sunbeam-last-update', now.toString());
+    } else {
+      const transformedProducts = selectedProducts.map(transformRapidApiProduct);
+      setProducts(transformedProducts);
+      setFilteredProducts(transformedProducts);
+      setSearchableProducts(selectedProducts.map(transformRapidApiToSearchableProduct));
     }
   };
 
   const refreshData = async () => {
-    setStaleDataWarning(false);
-    localStorage.setItem('sunbeam-last-update', new Date().getTime().toString());
+    refreshStaleData();
     
     // Reload selected products first
-    loadSelectedProducts();
+    const selectedProducts = loadSelectedProducts();
     
-    const adminProducts = localStorage.getItem('sunbeam-products');
-    if (adminProducts) {
-      try {
-        const parsed = JSON.parse(adminProducts);
-        setRealProducts(parsed);
-        if (parsed.length > 0 && selectedRapidApiProducts.length === 0) {
-          const transformedProducts = parsed.map(transformAdminProduct);
-          setProducts(transformedProducts);
-          setSearchableProducts(parsed.map(transformToSearchableProduct));
-        }
-      } catch (error) {
-        console.error('Failed to refresh products:', error);
-      }
+    const adminProducts = loadAdminProducts();
+    if (adminProducts.length > 0 && selectedRapidApiProducts.length === 0) {
+      const transformedProducts = adminProducts.map(transformAdminProduct);
+      setProducts(transformedProducts);
+      setSearchableProducts(adminProducts.map(transformToSearchableProduct));
     }
 
     if (selectedRapidApiProducts.length === 0) {
-      await loadProductsFromRapidApi();
+      const rapidProducts = await loadProductsFromRapidApi();
+      if (rapidProducts.length > 0) {
+        const transformedProducts = rapidProducts.map(transformRapidApiProduct);
+        setProducts(transformedProducts);
+        setFilteredProducts(transformedProducts);
+        setSearchableProducts(rapidProducts.map(transformRapidApiToSearchableProduct));
+      }
     }
   };
 
@@ -290,7 +121,7 @@ export const useProductData = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, [selectedRapidApiProducts.length]);
 
   return {
     products,
