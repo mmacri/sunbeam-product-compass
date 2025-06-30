@@ -131,7 +131,6 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     ExcelService.importFromExcel(file)
       .then(importedProducts => {
         setProducts(importedProducts);
-        setFilteredProducts(importedProducts);
         onShowMessage(`Imported ${importedProducts.length} products from Excel`);
         onLogAction('Import Products from Excel', { count: importedProducts.length });
       })
