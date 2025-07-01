@@ -6,11 +6,12 @@ import {
   FileText, 
   BarChart3,
   Activity,
-  Eye,
-  Search
+  Search,
+  Plus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ProductManagement } from '@/components/admin/ProductManagement';
+import { UnifiedProductWorkflow } from '@/components/admin/UnifiedProductWorkflow';
 import { TemplateManagement } from '@/components/admin/TemplateManagement';
 import { ReportsAndLogs } from '@/components/admin/ReportsAndLogs';
 import { AdminSettings } from '@/components/admin/AdminSettings';
@@ -46,16 +47,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [messageArea, setMessageArea] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('products');
   const { toast } = useToast();
 
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
         await loadProducts();
+        setIsLoading(false);
       } catch (error) {
         console.error('Error initializing admin:', error);
         showMessage('Error loading admin panel', 'error');
-      } finally {
         setIsLoading(false);
       }
     };
@@ -93,7 +95,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const saved = localStorage.getItem('sunbeam-products');
       if (saved) {
         const parsedProducts = JSON.parse(saved);
-        // Ensure products have proper structure
         const validProducts = parsedProducts.map((product: any) => ({
           id: product.id || Date.now().toString(),
           title: product.title || 'Untitled Product',
@@ -117,6 +118,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       localStorage.setItem('sunbeam-products', JSON.stringify(updatedProducts));
       setProducts(updatedProducts);
+      loadProducts(); // Refresh the products list
     } catch (error) {
       console.error('Error saving products:', error);
       showMessage('Error saving products', 'error');
@@ -153,27 +155,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </p>
         </header>
 
-        <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="products" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Products
+              <Plus className="w-4 h-4" />
+              Add Products
             </TabsTrigger>
             <TabsTrigger value="browse" className="flex items-center gap-2">
               <Search className="w-4 h-4" />
-              Browse
+              Browse & Select
             </TabsTrigger>
             <TabsTrigger value="template" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Template
+              Templates
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Logs
+              Reports & Logs
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -182,6 +180,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </TabsList>
 
           <TabsContent value="products" className="space-y-6">
+            <UnifiedProductWorkflow
+              products={products}
+              onProductsChange={saveProducts}
+              onLogAction={logAction}
+            />
             <ProductManagement
               products={products}
               onProductsChange={saveProducts}
@@ -208,14 +211,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
-            <ReportsAndLogs
-              products={products}
-              onLogAction={logAction}
-              onShowMessage={showMessage}
-            />
-          </TabsContent>
-
-          <TabsContent value="logs" className="space-y-6">
             <ReportsAndLogs
               products={products}
               onLogAction={logAction}

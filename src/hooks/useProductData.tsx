@@ -5,6 +5,7 @@ import { useSelectedProducts } from './useSelectedProducts';
 import { useAdminProducts } from './useAdminProducts';
 import { useRapidApiProducts } from './useRapidApiProducts';
 import { useStaleDataWarning } from './useStaleDataWarning';
+import { ProductExtractor } from '@/services/productExtractor';
 import {
   transformRapidApiProduct,
   transformRapidApiToSearchableProduct,
@@ -51,10 +52,27 @@ export const useProductData = () => {
   const { isLoadingRapidApi, loadProductsFromRapidApi } = useRapidApiProducts();
   const { staleDataWarning, refreshData: refreshStaleData } = useStaleDataWarning();
 
+  const configureProductExtractor = () => {
+    // Configure ProductExtractor with RapidAPI if available
+    const rapidApiKey = localStorage.getItem('rapidapi-key');
+    const rapidApiEnabled = localStorage.getItem('rapidapi-enabled') === 'true';
+    
+    if (rapidApiKey && rapidApiEnabled) {
+      console.log('Configuring ProductExtractor with RapidAPI');
+      ProductExtractor.configureRapidApi(rapidApiKey);
+    } else {
+      console.log('ProductExtractor using web scraping mode');
+      ProductExtractor.disableRapidApi();
+    }
+  };
+
   const loadInitialData = async () => {
     if (isInitialized) return;
     
     console.log('Loading initial data...');
+    
+    // Configure ProductExtractor first
+    configureProductExtractor();
     
     try {
       // Priority 1: Load selected products for user display
@@ -118,6 +136,7 @@ export const useProductData = () => {
   const refreshData = async () => {
     setIsInitialized(false);
     refreshStaleData();
+    configureProductExtractor();
     await loadInitialData();
   };
 
@@ -139,6 +158,11 @@ export const useProductData = () => {
       loadInitialData();
     }
   }, [selectedRapidApiProducts.length]);
+
+  // Re-configure ProductExtractor when API settings change
+  useEffect(() => {
+    configureProductExtractor();
+  }, []);
 
   return {
     products,
