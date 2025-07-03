@@ -3,30 +3,53 @@ import { RapidApiProduct } from '@/types/rapidApi';
 
 export class ExcelService {
   static exportToExcel(products: RapidApiProduct[], selectedColumns?: string[]): void {
+    // Enhanced headers mapping to user's template plus additional data
     const allHeaders = [
-      'asin', 'product_title', 'product_price', 'product_original_price', 'unit_price', 
-      'unit_count', 'currency', 'product_star_rating', 'product_num_ratings', 'sales_volume',
-      'product_url', 'product_photo', 'product_num_offers', 'product_minimum_offer_price',
-      'is_best_seller', 'is_amazon_choice', 'is_prime', 'climate_pledge_friendly',
-      'has_variations', 'delivery', 'product_byline', 'coupon_text', 'product_badge', 'product_availability'
+      'affiliate_link', 'title', 'image_url', 'gallery_image_urls', 'description', 'price', 'sale_price', 
+      'rating', 'review_1', 'review_2', 'category', 'tags', 'sku', 'status', 'date_added', 'cta',
+      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action',
+      // Additional fields from current export
+      'asin', 'unit_price', 'unit_count', 'currency', 'product_num_ratings', 'sales_volume',
+      'product_num_offers', 'product_minimum_offer_price', 'is_best_seller', 'is_amazon_choice', 
+      'is_prime', 'climate_pledge_friendly', 'has_variations', 'delivery', 'product_byline', 
+      'coupon_text', 'product_badge', 'standing_screen_display_size', 'memory_storage_capacity', 'ram_memory_installed_size'
     ];
 
     const headersToUse = selectedColumns && selectedColumns.length > 0 ? selectedColumns : allHeaders;
     
     const headerLabels = headersToUse.map(header => {
       const labelMap: Record<string, string> = {
+        // User's template headers
+        'affiliate_link': 'Affiliate Link',
+        'title': 'Title',
+        'image_url': 'Image URL',
+        'gallery_image_urls': 'Gallery Image URLs',
+        'description': 'Description',
+        'price': 'Price',
+        'sale_price': 'Sale Price',
+        'rating': 'Rating',
+        'review_1': 'Review 1',
+        'review_2': 'Review 2',
+        'category': 'Category',
+        'tags': 'Tags',
+        'sku': 'SKU',
+        'status': 'Status',
+        'date_added': 'Date Added',
+        'cta': 'Call to Action',
+        'affiliate_network': 'Affiliate Network',
+        'commission_rate': 'Commission Rate',
+        'availability': 'Availability',
+        'in_stock': 'In Stock',
+        'specifications': 'Specifications',
+        'custom_attributes': 'Custom Attributes',
+        'action': 'Action',
+        // Additional fields
         'asin': 'ASIN',
-        'product_title': 'Title',
-        'product_price': 'Price',
-        'product_original_price': 'Original Price',
         'unit_price': 'Unit Price',
         'unit_count': 'Unit Count',
         'currency': 'Currency',
-        'product_star_rating': 'Star Rating',
         'product_num_ratings': 'Number of Ratings',
         'sales_volume': 'Sales Volume',
-        'product_url': 'URL',
-        'product_photo': 'Photo URL',
         'product_num_offers': 'Number of Offers',
         'product_minimum_offer_price': 'Minimum Offer Price',
         'is_best_seller': 'Is Best Seller',
@@ -38,7 +61,9 @@ export class ExcelService {
         'product_byline': 'Byline',
         'coupon_text': 'Coupon Text',
         'product_badge': 'Product Badge',
-        'product_availability': 'Availability'
+        'standing_screen_display_size': 'Display Size',
+        'memory_storage_capacity': 'Storage Capacity',
+        'ram_memory_installed_size': 'RAM Size'
       };
       return labelMap[header] || header;
     });
@@ -47,7 +72,7 @@ export class ExcelService {
       headerLabels.join(','),
       ...products.map(product => 
         headersToUse.map(header => {
-          const value = (product as any)[header];
+          let value = this.mapProductData(product, header);
           if (typeof value === 'string') {
             return `"${value.replace(/"/g, '""')}"`;
           } else if (typeof value === 'boolean') {
@@ -167,6 +192,67 @@ export class ExcelService {
     
     result.push(current);
     return result;
+  }
+
+  private static mapProductData(product: RapidApiProduct, header: string): any {
+    const getAffiliateUrl = (asin: string) => `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
+    
+    const generateSpecs = () => {
+      const specs = [];
+      if (product.standing_screen_display_size) specs.push(`Display: ${product.standing_screen_display_size}`);
+      if (product.memory_storage_capacity) specs.push(`Storage: ${product.memory_storage_capacity}`);
+      if (product.ram_memory_installed_size) specs.push(`RAM: ${product.ram_memory_installed_size}`);
+      if (product.unit_count > 1) specs.push(`Unit Count: ${product.unit_count}`);
+      return specs.join('; ');
+    };
+
+    const generateTags = () => {
+      const tags = [];
+      if (product.is_best_seller) tags.push('Best Seller');
+      if (product.is_amazon_choice) tags.push('Amazon Choice');
+      if (product.is_prime) tags.push('Prime');
+      if (product.climate_pledge_friendly) tags.push('Eco-Friendly');
+      if (product.product_badge) tags.push(product.product_badge);
+      return tags.join(', ');
+    };
+
+    const generateDescription = () => {
+      const parts = [];
+      if (product.product_description) parts.push(product.product_description);
+      if (product.about_product?.length) parts.push(product.about_product.slice(0, 3).join(' '));
+      if (product.customers_say) parts.push(`Customers say: ${product.customers_say}`);
+      return parts.join(' ') || `High-quality ${product.product_title.toLowerCase()} with excellent customer reviews.`;
+    };
+
+    switch (header) {
+      // User's template mapping
+      case 'affiliate_link': return getAffiliateUrl(product.asin);
+      case 'title': return product.product_title;
+      case 'image_url': return product.product_photo;
+      case 'gallery_image_urls': return ''; // Not available in current API
+      case 'description': return generateDescription();
+      case 'price': return product.product_price;
+      case 'sale_price': return product.product_original_price || '';
+      case 'rating': return product.product_star_rating;
+      case 'review_1': return ''; // Not available in current API
+      case 'review_2': return ''; // Not available in current API
+      case 'category': return 'Electronics'; // Default category
+      case 'tags': return generateTags();
+      case 'sku': return product.asin;
+      case 'status': return 'Active';
+      case 'date_added': return new Date().toISOString().split('T')[0];
+      case 'cta': return 'Buy Now - Best Price';
+      case 'affiliate_network': return 'Amazon Associates';
+      case 'commission_rate': return '4-8%';
+      case 'availability': return product.product_availability || 'In Stock';
+      case 'in_stock': return product.product_availability ? 'Yes' : 'Unknown';
+      case 'specifications': return generateSpecs();
+      case 'custom_attributes': return product.coupon_text || '';
+      case 'action': return 'View Product';
+      
+      // Direct API field mapping
+      default: return (product as any)[header] || '';
+    }
   }
 
   private static cleanValue(value: string): string {
