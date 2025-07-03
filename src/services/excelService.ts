@@ -3,73 +3,27 @@ import { RapidApiProduct } from '@/types/rapidApi';
 
 export class ExcelService {
   static exportToExcel(products: RapidApiProduct[], selectedColumns?: string[]): void {
-    // Enhanced headers mapping to user's template plus additional data
-    const allHeaders = [
+    // User's exact template columns first, then additional API fields
+    const userTemplateHeaders = [
       'affiliate_link', 'title', 'image_url', 'gallery_image_urls', 'description', 'price', 'sale_price', 
       'rating', 'review_1', 'review_2', 'category', 'tags', 'sku', 'status', 'date_added', 'cta',
-      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action',
-      // Additional fields from current export
-      'asin', 'unit_price', 'unit_count', 'currency', 'product_num_ratings', 'sales_volume',
-      'product_num_offers', 'product_minimum_offer_price', 'is_best_seller', 'is_amazon_choice', 
-      'is_prime', 'climate_pledge_friendly', 'has_variations', 'delivery', 'product_byline', 
-      'coupon_text', 'product_badge', 'standing_screen_display_size', 'memory_storage_capacity', 'ram_memory_installed_size'
+      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action'
+    ];
+    
+    // Additional API fields not in user template
+    const additionalApiFields = [
+      'asin', 'product_title', 'unit_price', 'unit_count', 'currency', 'product_num_ratings', 'sales_volume',
+      'product_url', 'product_photo', 'product_num_offers', 'product_minimum_offer_price', 'is_best_seller', 
+      'is_amazon_choice', 'is_prime', 'climate_pledge_friendly', 'has_variations', 'delivery', 'product_byline', 
+      'coupon_text', 'product_badge', 'product_original_price', 'standing_screen_display_size', 
+      'memory_storage_capacity', 'ram_memory_installed_size'
     ];
 
+    const allHeaders = [...userTemplateHeaders, ...additionalApiFields];
     const headersToUse = selectedColumns && selectedColumns.length > 0 ? selectedColumns : allHeaders;
-    
-    const headerLabels = headersToUse.map(header => {
-      const labelMap: Record<string, string> = {
-        // User's template headers
-        'affiliate_link': 'Affiliate Link',
-        'title': 'Title',
-        'image_url': 'Image URL',
-        'gallery_image_urls': 'Gallery Image URLs',
-        'description': 'Description',
-        'price': 'Price',
-        'sale_price': 'Sale Price',
-        'rating': 'Rating',
-        'review_1': 'Review 1',
-        'review_2': 'Review 2',
-        'category': 'Category',
-        'tags': 'Tags',
-        'sku': 'SKU',
-        'status': 'Status',
-        'date_added': 'Date Added',
-        'cta': 'Call to Action',
-        'affiliate_network': 'Affiliate Network',
-        'commission_rate': 'Commission Rate',
-        'availability': 'Availability',
-        'in_stock': 'In Stock',
-        'specifications': 'Specifications',
-        'custom_attributes': 'Custom Attributes',
-        'action': 'Action',
-        // Additional fields
-        'asin': 'ASIN',
-        'unit_price': 'Unit Price',
-        'unit_count': 'Unit Count',
-        'currency': 'Currency',
-        'product_num_ratings': 'Number of Ratings',
-        'sales_volume': 'Sales Volume',
-        'product_num_offers': 'Number of Offers',
-        'product_minimum_offer_price': 'Minimum Offer Price',
-        'is_best_seller': 'Is Best Seller',
-        'is_amazon_choice': 'Is Amazon Choice',
-        'is_prime': 'Is Prime',
-        'climate_pledge_friendly': 'Climate Pledge Friendly',
-        'has_variations': 'Has Variations',
-        'delivery': 'Delivery',
-        'product_byline': 'Byline',
-        'coupon_text': 'Coupon Text',
-        'product_badge': 'Product Badge',
-        'standing_screen_display_size': 'Display Size',
-        'memory_storage_capacity': 'Storage Capacity',
-        'ram_memory_installed_size': 'RAM Size'
-      };
-      return labelMap[header] || header;
-    });
-
+    // Use exact column names as headers (no friendly labels)
     const csvContent = [
-      headerLabels.join(','),
+      headersToUse.join(','),
       ...products.map(product => 
         headersToUse.map(header => {
           let value = this.mapProductData(product, header);
