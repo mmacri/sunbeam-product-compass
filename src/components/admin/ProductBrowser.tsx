@@ -170,17 +170,8 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       return;
     }
 
-    const filteredProducts = selectedProducts.map(product => {
-      const filtered: any = {};
-      selectedColumns.forEach(column => {
-        if (product.hasOwnProperty(column)) {
-          filtered[column] = (product as any)[column];
-        }
-      });
-      return filtered;
-    });
-
-    ExcelService.exportToExcel(filteredProducts.length > 0 ? filteredProducts : selectedProducts, selectedColumns);
+    // Pass the full product objects to ExcelService for proper data mapping
+    ExcelService.exportToExcel(selectedProducts, selectedColumns);
     onShowMessage(`Exported ${selectedProducts.length} products to Excel`);
     onLogAction('export_products', { count: selectedProducts.length, columns: selectedColumns });
   };
