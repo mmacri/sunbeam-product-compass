@@ -12,6 +12,15 @@ interface DatabaseProduct {
   affiliate_url: string | null;
   asin: string | null;
   attributes: any;
+  specifications: any;
+  price_history: any;
+  commission_rate: number | null;
+  click_count: number | null;
+  conversion_count: number | null;
+  revenue_generated: number | null;
+  api_last_updated: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useDatabaseProducts = () => {
@@ -29,7 +38,7 @@ export const useDatabaseProducts = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, sale_price, rating, image_url, affiliate_url, asin, attributes')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

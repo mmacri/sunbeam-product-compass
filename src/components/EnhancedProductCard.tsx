@@ -1,270 +1,231 @@
-
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Star, 
-  ExternalLink, 
-  ShoppingCart, 
-  Truck, 
-  Award, 
-  Leaf, 
-  Tag, 
-  DollarSign,
-  Users,
-  Check,
-  Zap
-} from 'lucide-react';
-import { RapidApiProduct } from '@/types/rapidApi';
+import { Star, ShoppingCart, TrendingDown, Users, DollarSign, Calendar, BarChart3 } from 'lucide-react';
 
-interface EnhancedProductCardProps {
-  product: RapidApiProduct;
-  onProductClick: (asin: string) => void;
+interface DatabaseProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number | null;
+  sale_price: number | null;
+  rating: number | null;
+  image_url: string | null;
+  affiliate_url: string | null;
+  asin: string | null;
+  attributes: any;
+  specifications: any;
+  price_history: any;
+  commission_rate: number | null;
+  click_count: number | null;
+  conversion_count: number | null;
+  revenue_generated: number | null;
+  api_last_updated: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({
-  product,
-  onProductClick
-}) => {
-  const getAffiliateUrl = (asin: string) => {
-    return `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
-  };
+interface EnhancedProductCardProps {
+  product: DatabaseProduct;
+}
 
-  const formatPrice = (price: string) => price || 'N/A';
-
-  const formatRating = (rating: string, numRatings: number) => (
-    <div className="flex items-center gap-1">
-      <div className="flex">
-        {[...Array(5)].map((_, i) => (
-          <Star 
-            key={i} 
-            className={`w-4 h-4 ${
-              i < Math.floor(parseFloat(rating || '0')) 
-                ? 'fill-yellow-400 text-yellow-400' 
-                : 'text-gray-300'
-            }`} 
-          />
-        ))}
-      </div>
-      <span className="font-medium">{rating || 'N/A'}</span>
-      <span className="text-gray-500 text-sm">({numRatings?.toLocaleString() || 0})</span>
-    </div>
-  );
-
-  const calculateSavings = () => {
-    if (product.product_original_price && product.product_price) {
-      const original = parseFloat(product.product_original_price.replace(/[^0-9.]/g, ''));
-      const current = parseFloat(product.product_price.replace(/[^0-9.]/g, ''));
-      if (original > current) {
-        const savings = original - current;
-        const percentage = ((savings / original) * 100).toFixed(0);
-        return { amount: `$${savings.toFixed(2)}`, percentage: `${percentage}%` };
-      }
+export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({ product }) => {
+  // Parse price history to find lowest price
+  const getLowestPrice = () => {
+    try {
+      const priceHistory = Array.isArray(product.price_history) 
+        ? product.price_history 
+        : JSON.parse(product.price_history || '[]');
+      if (priceHistory.length === 0) return null;
+      return Math.min(...priceHistory.map((p: any) => p.price || 0));
+    } catch {
+      return null;
     }
-    return null;
   };
 
-  const savings = calculateSavings();
+  // Parse attributes for additional info
+  const getReviewCount = () => {
+    return product.attributes?.product_num_ratings_parsed || 
+           product.attributes?.originalCsvData?.product_num_ratings_parsed || 
+           product.attributes?.product_num_ratings ||
+           null;
+  };
+
+  const getSalesVolume = () => {
+    return product.attributes?.sales_volume || 
+           product.attributes?.originalCsvData?.sales_volume ||
+           null;
+  };
+
+  const getDeliveryInfo = () => {
+    return product.attributes?.delivery || 
+           product.attributes?.originalCsvData?.delivery ||
+           null;
+  };
+
+  const lowestPrice = getLowestPrice();
+  const reviewCount = getReviewCount();
+  const salesVolume = getSalesVolume();
+  const deliveryInfo = getDeliveryInfo();
+
+  const formatPrice = (price: number | null) => price ? `$${price.toFixed(2)}` : 'N/A';
+  const formatNumber = (num: number | null | string) => {
+    if (!num) return null;
+    const numValue = typeof num === 'string' ? parseInt(num.replace(/[^0-9]/g, '')) : num;
+    if (numValue >= 1000) {
+      return `${(numValue / 1000).toFixed(1)}K`;
+    }
+    return numValue.toLocaleString();
+  };
+
+  const savingsAmount = product.sale_price && product.price 
+    ? product.sale_price - product.price 
+    : 0;
+
+  const savingsPercent = product.sale_price && product.price && savingsAmount > 0
+    ? Math.round((savingsAmount / product.sale_price) * 100)
+    : 0;
 
   return (
-    <Card className="overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-2 hover:border-orange-200 dark:hover:border-orange-700">
-      {/* Hero Section with Image and Badges */}
-      <div className="relative">
-        <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center p-6">
-          <img
-            src={product.product_photo}
-            alt={product.product_title}
-            className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-        
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.is_best_seller && (
-            <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
-              <Award className="w-3 h-3 mr-1" />
-              #1 Best Seller
-            </Badge>
-          )}
-          {product.is_amazon_choice && (
-            <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-              <Zap className="w-3 h-3 mr-1" />
-              Amazon's Choice
-            </Badge>
-          )}
-        </div>
-
-        {/* Savings Badge */}
-        {savings && (
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-lg px-3 py-1 shadow-lg">
-              Save {savings.percentage}
-            </Badge>
-          </div>
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-orange-200">
+      {/* Product Image */}
+      <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 relative">
+        <img
+          src={product.image_url || '/placeholder.svg'}
+          alt={product.name}
+          className="max-w-full max-h-full object-contain"
+        />
+        {savingsPercent > 0 && (
+          <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+            {savingsPercent}% OFF
+          </Badge>
         )}
       </div>
+      
+      <CardContent className="p-4 space-y-4">
+        {/* Product Title */}
+        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+          {product.name}
+        </h3>
+        
+        {/* Product Description */}
+        {product.description && (
+          <p className="text-xs text-gray-600 line-clamp-2">{product.description}</p>
+        )}
 
-      <CardContent className="p-6 space-y-6">
-        {/* Product Title and Brand */}
+        {/* Rating & Reviews */}
+        <div className="flex items-center justify-between">
+          {product.rating && (
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium">{product.rating.toFixed(1)}</span>
+              {reviewCount && (
+                <span className="text-xs text-gray-500">({formatNumber(reviewCount)} reviews)</span>
+              )}
+            </div>
+          )}
+          {salesVolume && (
+            <div className="flex items-center gap-1 text-xs text-blue-600">
+              <Users className="w-3 h-3" />
+              <span>{salesVolume}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Price Information */}
         <div className="space-y-2">
-          <h3 className="font-bold text-xl leading-tight text-gray-900 dark:text-gray-100 line-clamp-2 hover:text-orange-600 transition-colors">
-            {product.product_title}
-          </h3>
-          {product.product_byline && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-              by {product.product_byline}
-            </p>
-          )}
-        </div>
-
-        {/* Rating and Social Proof */}
-        <div className="space-y-3">
-          {formatRating(product.product_star_rating, product.product_num_ratings)}
-          
-          {product.sales_volume && (
-            <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-              <Users className="w-4 h-4" />
-              <span className="font-medium">{product.sales_volume}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Pricing Section */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-200 dark:border-green-700">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-green-600 dark:text-green-400">
-                {formatPrice(product.product_price)}
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-bold text-green-600">
+              {formatPrice(product.price)}
+            </span>
+            {product.sale_price && product.sale_price !== product.price && (
+              <span className="text-sm text-gray-500 line-through">
+                {formatPrice(product.sale_price)}
               </span>
-              {product.product_original_price && 
-                product.product_original_price !== product.product_price && (
-                <div className="flex flex-col">
-                  <span className="text-lg text-gray-500 line-through">
-                    {formatPrice(product.product_original_price)}
-                  </span>
-                  {savings && (
-                    <span className="text-sm text-green-600 font-medium">
-                      Save {savings.amount}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <DollarSign className="w-6 h-6 text-green-600" />
+            )}
+            {savingsAmount > 0 && (
+              <span className="text-xs text-red-600 font-medium">
+                Save {formatPrice(savingsAmount)}
+              </span>
+            )}
           </div>
           
-          {product.unit_count > 1 && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {formatPrice(product.unit_price)} per unit • {product.unit_count} units total
-            </p>
+          {/* Lowest Price History */}
+          {lowestPrice && lowestPrice < (product.price || 0) && (
+            <div className="flex items-center gap-1 text-xs text-gray-600">
+              <TrendingDown className="w-3 h-3" />
+              <span>Lowest: {formatPrice(lowestPrice)}</span>
+            </div>
           )}
         </div>
 
-        {/* Special Offers */}
-        {product.coupon_text && (
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-700">
-            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-              <Tag className="w-4 h-4" />
-              <span className="font-medium text-sm">{product.coupon_text}</span>
-            </div>
+        {/* Product Badges */}
+        <div className="flex flex-wrap gap-1">
+          {product.attributes?.is_best_seller && (
+            <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+              Best Seller
+            </Badge>
+          )}
+          {product.attributes?.is_amazon_choice && (
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+              Amazon&apos;s Choice
+            </Badge>
+          )}
+          {product.attributes?.is_prime && (
+            <Badge variant="outline" className="text-xs">Prime</Badge>
+          )}
+          {product.attributes?.climate_pledge_friendly && (
+            <Badge variant="outline" className="text-xs text-green-700">Eco-Friendly</Badge>
+          )}
+        </div>
+
+        {/* Delivery Information */}
+        {deliveryInfo && (
+          <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+            📦 {deliveryInfo}
           </div>
         )}
 
-        {/* Features and Benefits */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-            Key Benefits
-          </h4>
+        {/* Admin/Affiliate Information */}
+        <div className="border-t pt-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+            {product.commission_rate && (
+              <div className="flex items-center gap-1">
+                <DollarSign className="w-3 h-3" />
+                <span>{product.commission_rate}% commission</span>
+              </div>
+            )}
+            {product.click_count !== null && (
+              <div className="flex items-center gap-1">
+                <BarChart3 className="w-3 h-3" />
+                <span>{product.click_count} clicks</span>
+              </div>
+            )}
+          </div>
           
-          <div className="flex flex-wrap gap-2">
-            {product.is_prime && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                <Truck className="w-3 h-3 mr-1" />
-                Prime Delivery
-              </Badge>
-            )}
-            {product.climate_pledge_friendly && (
-              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-                <Leaf className="w-3 h-3 mr-1" />
-                Eco-Friendly
-              </Badge>
-            )}
-            {product.product_badge && (
-              <Badge variant="outline" className="border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300">
-                {product.product_badge}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Product Details */}
-        {(product.product_availability || product.delivery) && (
-          <div className="space-y-2 text-sm">
-            {product.product_availability && (
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                <Check className="w-4 h-4" />
-                <span>{product.product_availability}</span>
-              </div>
-            )}
-            {product.delivery && (
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Truck className="w-4 h-4" />
-                <span>{product.delivery}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Technical Specs (if available) */}
-        {(product.standing_screen_display_size || product.memory_storage_capacity || product.ram_memory_installed_size) && (
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-            <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-2">Specifications</h4>
-            <div className="grid grid-cols-1 gap-1 text-xs text-gray-600 dark:text-gray-400">
-              {product.standing_screen_display_size && (
-                <div><strong>Display:</strong> {product.standing_screen_display_size}</div>
-              )}
-              {product.memory_storage_capacity && (
-                <div><strong>Storage:</strong> {product.memory_storage_capacity}</div>
-              )}
-              {product.ram_memory_installed_size && (
-                <div><strong>RAM:</strong> {product.ram_memory_installed_size}</div>
-              )}
+          {product.api_last_updated && (
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Calendar className="w-3 h-3" />
+              <span>Updated: {new Date(product.api_last_updated).toLocaleDateString()}</span>
             </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <Button
-            className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold py-3 shadow-lg hover:shadow-xl transition-all duration-300"
-            size="lg"
-            onClick={() => window.open(getAffiliateUrl(product.asin), '_blank')}
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Buy Now - Best Price
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 dark:border-orange-700 dark:hover:bg-orange-900/20"
-            onClick={() => onProductClick(product.asin)}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Full Details
-          </Button>
+          )}
+          
+          {product.revenue_generated && product.revenue_generated > 0 && (
+            <div className="text-xs text-green-600 font-medium">
+              💰 Revenue: ${product.revenue_generated.toFixed(2)}
+            </div>
+          )}
         </div>
 
-        {/* Additional Info */}
-        <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <span>ASIN: {product.asin}</span>
-            {product.product_num_offers > 1 && (
-              <span>{product.product_num_offers} offers available</span>
-            )}
-          </div>
-        </div>
+        {/* Action Button */}
+        <Button
+          className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+          onClick={() => product.affiliate_url && window.open(product.affiliate_url, '_blank')}
+        >
+          <ShoppingCart className="w-4 h-4 mr-2" />
+          Buy Now - Best Price
+        </Button>
       </CardContent>
     </Card>
   );

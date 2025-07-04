@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useProductData } from '@/hooks/useProductData';
 import { useDatabaseProducts } from '@/hooks/useDatabaseProducts';
 import { DatabaseProductFilters } from '@/components/DatabaseProductFilters';
+import { EnhancedProductCard } from '@/components/EnhancedProductCard';
 import { StaleDataWarning } from '@/components/StaleDataWarning';
 import { AppHeader } from '@/components/AppHeader';
 import { HeroSection } from '@/components/HeroSection';
@@ -106,53 +107,7 @@ const Index = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {databaseProducts.map((product) => (
-                    <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                      <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
-                        <img
-                          src={product.image_url || '/placeholder.svg'}
-                          alt={product.name}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      </div>
-                      
-                      <CardContent className="p-4 space-y-3">
-                        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
-                          {product.name}
-                        </h3>
-                        
-                        {product.description && (
-                          <p className="text-xs text-gray-600 line-clamp-2">{product.description}</p>
-                        )}
-                        
-                        {product.rating && (
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{product.rating.toFixed(1)}</span>
-                          </div>
-                        )}
-                        
-                        <div className="space-y-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-lg font-bold text-green-600">
-                              ${product.price?.toFixed(2) || 'N/A'}
-                            </span>
-                            {product.sale_price && product.sale_price !== product.price && (
-                              <span className="text-sm text-gray-500 line-through">
-                                ${product.sale_price.toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <Button
-                          className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                          onClick={() => product.affiliate_url && window.open(product.affiliate_url, '_blank')}
-                        >
-                          <ShoppingCart className="w-4 h-4 mr-2" />
-                          Buy Now
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <EnhancedProductCard key={product.id} product={product} />
                   ))}
                 </div>
               )}
