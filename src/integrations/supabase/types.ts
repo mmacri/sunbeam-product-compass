@@ -433,10 +433,54 @@ export type Database = {
           },
         ]
       }
+      product_api_snapshots: {
+        Row: {
+          api_source: string
+          asin: string
+          availability_at_time: boolean | null
+          created_at: string
+          id: string
+          price_at_time: number | null
+          product_id: string | null
+          raw_data: Json
+        }
+        Insert: {
+          api_source: string
+          asin: string
+          availability_at_time?: boolean | null
+          created_at?: string
+          id?: string
+          price_at_time?: number | null
+          product_id?: string | null
+          raw_data: Json
+        }
+        Update: {
+          api_source?: string
+          asin?: string
+          availability_at_time?: boolean | null
+          created_at?: string
+          id?: string
+          price_at_time?: number | null
+          product_id?: string | null
+          raw_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_api_snapshots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           affiliate_link_id: string | null
           affiliate_url: string | null
+          api_last_updated: string | null
+          api_source: string | null
+          asin: string | null
           attributes: Json | null
           availability: boolean | null
           category_id: string | null
@@ -450,6 +494,7 @@ export type Database = {
           in_stock: boolean | null
           name: string
           price: number | null
+          price_history: Json | null
           rating: number | null
           revenue_generated: number | null
           sale_price: number | null
@@ -460,6 +505,9 @@ export type Database = {
         Insert: {
           affiliate_link_id?: string | null
           affiliate_url?: string | null
+          api_last_updated?: string | null
+          api_source?: string | null
+          asin?: string | null
           attributes?: Json | null
           availability?: boolean | null
           category_id?: string | null
@@ -473,6 +521,7 @@ export type Database = {
           in_stock?: boolean | null
           name: string
           price?: number | null
+          price_history?: Json | null
           rating?: number | null
           revenue_generated?: number | null
           sale_price?: number | null
@@ -483,6 +532,9 @@ export type Database = {
         Update: {
           affiliate_link_id?: string | null
           affiliate_url?: string | null
+          api_last_updated?: string | null
+          api_source?: string | null
+          asin?: string | null
           attributes?: Json | null
           availability?: boolean | null
           category_id?: string | null
@@ -496,6 +548,7 @@ export type Database = {
           in_stock?: boolean | null
           name?: string
           price?: number | null
+          price_history?: Json | null
           rating?: number | null
           revenue_generated?: number | null
           sale_price?: number | null
@@ -692,6 +745,9 @@ export type Database = {
         Returns: {
           affiliate_link_id: string | null
           affiliate_url: string | null
+          api_last_updated: string | null
+          api_source: string | null
+          asin: string | null
           attributes: Json | null
           availability: boolean | null
           category_id: string | null
@@ -705,6 +761,7 @@ export type Database = {
           in_stock: boolean | null
           name: string
           price: number | null
+          price_history: Json | null
           rating: number | null
           revenue_generated: number | null
           sale_price: number | null

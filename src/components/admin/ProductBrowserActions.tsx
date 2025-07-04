@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Upload, Save } from 'lucide-react';
+import { Download, Upload, Save, Database } from 'lucide-react';
 
 interface ProductBrowserActionsProps {
   filteredProductsCount: number;
@@ -10,6 +10,7 @@ interface ProductBrowserActionsProps {
   onClearSelection: () => void;
   onExportSelected: () => void;
   onSaveSelectedForUsers: () => void;
+  onUpdateDatabase: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -20,6 +21,7 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
   onClearSelection,
   onExportSelected,
   onSaveSelectedForUsers,
+  onUpdateDatabase,
   onImport
 }) => {
   return (
@@ -58,6 +60,15 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
       >
         <Save className="w-4 h-4 mr-2" />
         Save for Users ({selectedAsinsCount})
+      </Button>
+      <Button
+        onClick={onUpdateDatabase}
+        size="sm"
+        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+        disabled={selectedAsinsCount === 0}
+      >
+        <Database className="w-4 h-4 mr-2" />
+        Update Database ({selectedAsinsCount})
       </Button>
       <div className="flex items-center gap-2">
         <input
