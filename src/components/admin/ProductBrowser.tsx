@@ -163,17 +163,28 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     onShowMessage('Column selection saved successfully');
   };
 
-  const exportSelectedProducts = () => {
+  const exportSelectedProducts = async () => {
     const selectedProducts = products.filter(p => selectedAsins.includes(p.asin));
     if (selectedProducts.length === 0) {
       onShowMessage('No products selected for export', 'error');
       return;
     }
 
-    // Pass the full product objects to ExcelService for proper data mapping
-    ExcelService.exportToExcel(selectedProducts, selectedColumns);
-    onShowMessage(`Exported ${selectedProducts.length} products to Excel`);
-    onLogAction('export_products', { count: selectedProducts.length, columns: selectedColumns });
+    try {
+      onShowMessage('Fetching reviews and exporting... This may take a moment.', 'success');
+      // Use the enhanced export method that fetches real reviews
+      await ExcelService.exportToExcelWithReviews(selectedProducts, selectedColumns, (current, total) => {
+        console.log(`Progress: ${current}/${total} products processed`);
+      });
+      onShowMessage(`Exported ${selectedProducts.length} products with reviews to Excel`);
+      onLogAction('export_products_with_reviews', { count: selectedProducts.length, columns: selectedColumns });
+    } catch (error) {
+      console.error('Export with reviews failed:', error);
+      // Fallback to regular export
+      ExcelService.exportToExcel(selectedProducts, selectedColumns);
+      onShowMessage(`Exported ${selectedProducts.length} products to Excel (reviews fetch failed)`);
+      onLogAction('export_products_fallback', { count: selectedProducts.length, columns: selectedColumns });
+    }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
