@@ -98,18 +98,32 @@ export const ExcelExportTest: React.FC = () => {
     ExcelService.exportToExcel(sampleRapidApiProducts, testColumns);
   };
 
+  const testEnhancedExport = async () => {
+    console.log('Testing enhanced Excel export with reviews API:', sampleRapidApiProducts);
+    try {
+      await ExcelService.exportToExcelWithReviews(sampleRapidApiProducts, undefined, (current, total) => {
+        console.log(`Test progress: ${current}/${total} products processed`);
+      });
+    } catch (error) {
+      console.error('Enhanced export test failed:', error);
+    }
+  };
+
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
         <CardTitle>Excel Export Test</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button onClick={testExport} variant="outline">
             Test Full Export (All Columns)
           </Button>
           <Button onClick={testSelectedColumns} variant="outline">
             Test Selected Columns Export
+          </Button>
+          <Button onClick={testEnhancedExport} variant="default">
+            Test Enhanced Export (With Reviews)
           </Button>
         </div>
         
