@@ -188,9 +188,9 @@ export class ExcelService {
       case 'price': return product.product_price;
       case 'sale_price': return product.product_original_price || '';
       case 'rating': return product.product_star_rating;
-      case 'review_1': return ''; // Not available in current API
-      case 'review_2': return ''; // Not available in current API
-      case 'category': return 'Electronics'; // Default category
+      case 'review_1': return product.customers_say || (product.about_product?.[0] || '');
+      case 'review_2': return product.about_product?.[1] || product.about_product?.[2] || '';
+      case 'category': return product.product_byline || 'Electronics'; // Use byline if available
       case 'tags': return generateTags();
       case 'sku': return product.asin;
       case 'status': return 'Active';
@@ -199,7 +199,7 @@ export class ExcelService {
       case 'affiliate_network': return 'Amazon Associates';
       case 'commission_rate': return '4-8%';
       case 'availability': return product.product_availability || 'In Stock';
-      case 'in_stock': return product.product_availability ? 'Yes' : 'Unknown';
+      case 'in_stock': return product.product_availability !== 'Out of Stock' ? 'Yes' : 'No';
       case 'specifications': return generateSpecs();
       case 'custom_attributes': return product.coupon_text || '';
       case 'action': return 'View Product';
