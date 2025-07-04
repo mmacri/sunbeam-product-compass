@@ -14,7 +14,8 @@ import { UnifiedProductList } from '@/components/UnifiedProductList';
 import { ProductGrid } from '@/components/ProductGrid';
 import { AppFooter } from '@/components/AppFooter';
 import { FullProductPage } from '@/components/FullProductPage';
-import { Star, ShoppingCart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -58,6 +59,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <StaleDataWarning show={staleDataWarning} onRefresh={refreshData} />
+
+      <div className="fixed top-4 right-4 z-50">
+        <Link to="/admin">
+          <Button variant="outline" size="sm">
+            <Settings className="w-4 h-4 mr-2" />
+            Admin
+          </Button>
+        </Link>
+      </div>
 
       <AppHeader 
         theme={theme}

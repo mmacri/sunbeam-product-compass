@@ -1,15 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { 
   Settings, 
   FileText, 
   BarChart3,
   Activity,
   Search,
-  Plus
+  Plus,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { UnifiedProductWorkflow } from '@/components/admin/UnifiedProductWorkflow';
 import { TemplateManagement } from '@/components/admin/TemplateManagement';
@@ -49,6 +53,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('products');
   const { toast } = useToast();
+  const { user, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     const initializeAdmin = async () => {
@@ -146,13 +151,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Sunbeam Admin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage products, templates, and generate blog content
-          </p>
+        <header className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              Sunbeam Admin Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage products, templates, and generate blog content
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="w-4 h-4" />
+              <span>{user?.email}</span>
+              {isAdmin && <span className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs">Admin</span>}
+            </div>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
