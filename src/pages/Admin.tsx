@@ -3,6 +3,7 @@ import React from 'react';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { AdminHeader } from '@/components/AdminHeader';
 import { ExcelExportTest } from '@/components/admin/ExcelExportTest';
+import { ApiDataDebugger } from '@/components/admin/ApiDataDebugger';
 import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
@@ -33,8 +34,9 @@ const Admin = () => {
       <AdminHeader />
       
       {/* Excel Export Test Section */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         <ExcelExportTest />
+        <ApiDataDebugger />
       </div>
       
       <AdminDashboard
