@@ -2,6 +2,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { RapidApiProduct } from '@/types/rapidApi';
 
 export const useProductDatabase = () => {
+  // Helper function to convert Amazon URL to affiliate URL
+  const createAffiliateUrl = (originalUrl: string, asin: string) => {
+    // Extract the base Amazon URL and add affiliate tag
+    const baseUrl = originalUrl.split('?')[0]; // Remove existing query params
+    return `${baseUrl}?tag=homefitrecove-20`; // Add your affiliate tag
+  };
+
   const updateDatabase = async (selectedProducts: RapidApiProduct[]) => {
     if (selectedProducts.length === 0) {
       return { success: false, error: 'No products selected for database update' };
@@ -16,6 +23,38 @@ export const useProductDatabase = () => {
         const priceValue = parseFloat(product.product_price?.replace(/[^0-9.]/g, '') || '0');
         const salePriceValue = product.product_original_price ? parseFloat(product.product_original_price.replace(/[^0-9.]/g, '') || '0') : null;
         
+        // Create affiliate URL with your tag
+        const affiliateUrl = createAffiliateUrl(product.product_url, product.asin);
+
+        // Check if product exists by ASIN
+        const { data: existingProduct } = await supabase
+          .from('products')
+          .select('id, price, price_history')
+          .eq('asin', product.asin)
+          .maybeSingle();
+
+        // Prepare price history
+        let priceHistory = [];
+        if (existingProduct?.price_history) {
+          try {
+            priceHistory = typeof existingProduct.price_history === 'string' 
+              ? JSON.parse(existingProduct.price_history) 
+              : existingProduct.price_history;
+          } catch (e) {
+            priceHistory = [];
+          }
+        }
+
+        // Add new price entry if price has changed
+        const lastPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1].price : null;
+        if (lastPrice !== priceValue) {
+          priceHistory.push({
+            date: new Date().toISOString(),
+            price: priceValue,
+            source: 'rapidapi'
+          });
+        }
+
         const productData = {
           name: product.product_title,
           description: product.product_byline || product.product_title,
@@ -29,12 +68,13 @@ export const useProductDatabase = () => {
           api_last_updated: new Date().toISOString(),
           availability: product.product_availability !== 'Currently unavailable',
           in_stock: product.product_availability !== 'Currently unavailable',
+          affiliate_url: affiliateUrl, // Use your affiliate URL
           specifications: {
             star_rating: product.product_star_rating,
             num_ratings: product.product_num_ratings,
             byline: product.product_byline,
             availability: product.product_availability,
-            url: product.product_url,
+            original_url: product.product_url, // Keep original for reference
             is_best_seller: product.is_best_seller,
             is_amazon_choice: product.is_amazon_choice,
             is_prime: product.is_prime,
@@ -46,22 +86,11 @@ export const useProductDatabase = () => {
             prime: product.is_prime,
             climatePledge: product.climate_pledge_friendly
           },
-          price_history: JSON.stringify([{
-            date: new Date().toISOString(),
-            price: priceValue,
-            source: 'rapidapi'
-          }])
+          price_history: JSON.stringify(priceHistory)
         };
 
-        // Check if product exists by ASIN
-        const { data: existingProduct } = await supabase
-          .from('products')
-          .select('id, price')
-          .eq('asin', product.asin)
-          .maybeSingle();
-
         if (existingProduct) {
-          // Update existing product
+          // Update existing product with latest data
           const { error } = await supabase
             .from('products')
             .update(productData)
@@ -73,7 +102,7 @@ export const useProductDatabase = () => {
           }
           updatedCount++;
 
-          // Save API snapshot
+          // Save API snapshot for historical tracking
           await supabase.from('product_api_snapshots').insert({
             product_id: existingProduct.id,
             asin: product.asin,
@@ -96,7 +125,7 @@ export const useProductDatabase = () => {
           }
           savedCount++;
 
-          // Save API snapshot
+          // Save API snapshot for new product
           if (newProduct) {
             await supabase.from('product_api_snapshots').insert({
               product_id: newProduct.id,
