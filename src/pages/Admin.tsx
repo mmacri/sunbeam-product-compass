@@ -2,6 +2,7 @@
 import React from 'react';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { AdminHeader } from '@/components/AdminHeader';
+import { ExcelExportTest } from '@/components/admin/ExcelExportTest';
 import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
@@ -30,6 +31,11 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <AdminHeader />
+      
+      {/* Excel Export Test Section */}
+      <div className="container mx-auto px-4 py-6">
+        <ExcelExportTest />
+      </div>
       
       <AdminDashboard
         onViewProduct={handleViewProduct}
