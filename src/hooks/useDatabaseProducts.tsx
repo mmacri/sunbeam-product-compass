@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DatabaseProduct {
@@ -11,12 +11,17 @@ interface DatabaseProduct {
   image_url: string | null;
   affiliate_url: string | null;
   asin: string | null;
+  attributes: any;
 }
 
 export const useDatabaseProducts = () => {
   const [products, setProducts] = useState<DatabaseProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name-asc');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [minRating, setMinRating] = useState(0);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -24,7 +29,7 @@ export const useDatabaseProducts = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, sale_price, rating, image_url, affiliate_url, asin')
+        .select('id, name, description, price, sale_price, rating, image_url, affiliate_url, asin, attributes')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -36,14 +41,74 @@ export const useDatabaseProducts = () => {
     }
   };
 
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Price range filter
+    filtered = filtered.filter(product => {
+      if (!product.price) return true;
+      return product.price >= priceRange[0] && product.price <= priceRange[1];
+    });
+
+    // Rating filter
+    if (minRating > 0) {
+      filtered = filtered.filter(product => 
+        product.rating && product.rating >= minRating
+      );
+    }
+
+    // Sort products
+    switch (sortBy) {
+      case 'name-asc':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name-desc':
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'price-asc':
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+        break;
+      case 'rating-desc':
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'rating-asc':
+        filtered.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [products, searchTerm, sortBy, priceRange, minRating]);
+
   useEffect(() => {
     fetchProducts();
   }, []);
 
   return {
-    products,
+    products: filteredAndSortedProducts,
+    allProducts: products,
     loading,
     error,
+    searchTerm,
+    setSearchTerm,
+    sortBy,
+    setSortBy,
+    priceRange,
+    setPriceRange,
+    minRating,
+    setMinRating,
     refetch: fetchProducts
   };
 };

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useProductData } from '@/hooks/useProductData';
 import { useDatabaseProducts } from '@/hooks/useDatabaseProducts';
+import { DatabaseProductFilters } from '@/components/DatabaseProductFilters';
 import { StaleDataWarning } from '@/components/StaleDataWarning';
 import { AppHeader } from '@/components/AppHeader';
 import { HeroSection } from '@/components/HeroSection';
@@ -26,7 +27,19 @@ const Index = () => {
     refreshData
   } = useProductData();
 
-  const { products: databaseProducts, loading: loadingDbProducts } = useDatabaseProducts();
+  const { 
+    products: databaseProducts, 
+    allProducts,
+    loading: loadingDbProducts,
+    searchTerm,
+    setSearchTerm,
+    sortBy,
+    setSortBy,
+    priceRange,
+    setPriceRange,
+    minRating,
+    setMinRating
+  } = useDatabaseProducts();
 
   const selectedProduct = selectedProductAsin 
     ? selectedRapidApiProducts.find(p => p.asin === selectedProductAsin)
@@ -57,68 +70,92 @@ const Index = () => {
 
         <div className="grid gap-8 md:gap-12">
           {/* Database Products Section */}
-          {databaseProducts.length > 0 && (
+          {allProducts.length > 0 && (
             <div className="space-y-8">
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  Products Available
+                  Products Available ({allProducts.length} total)
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-8">
                   Discover our curated selection of top-rated products
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {databaseProducts.map((product) => (
-                  <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                    <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
-                      <img
-                        src={product.image_url || '/placeholder.svg'}
-                        alt={product.name}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    
-                    <CardContent className="p-4 space-y-3">
-                      <h3 className="font-semibold text-sm leading-tight line-clamp-2">
-                        {product.name}
-                      </h3>
-                      
-                      {product.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{product.description}</p>
-                      )}
-                      
-                      {product.rating && (
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="font-medium">{product.rating.toFixed(1)}</span>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold text-green-600">
-                            ${product.price?.toFixed(2) || 'N/A'}
-                          </span>
-                          {product.sale_price && product.sale_price !== product.price && (
-                            <span className="text-sm text-gray-500 line-through">
-                              ${product.sale_price.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
+              <DatabaseProductFilters
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                minRating={minRating}
+                setMinRating={setMinRating}
+                totalProducts={allProducts.length}
+                filteredCount={databaseProducts.length}
+              />
+              
+              {databaseProducts.length === 0 ? (
+                <Card className="text-center py-12">
+                  <CardContent>
+                    <h3 className="text-xl font-semibold mb-4">No Products Match Your Filters</h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Try adjusting your search criteria or filters to find products.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {databaseProducts.map((product) => (
+                    <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                      <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
+                        <img
+                          src={product.image_url || '/placeholder.svg'}
+                          alt={product.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
                       </div>
                       
-                      <Button
-                        className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                        onClick={() => product.affiliate_url && window.open(product.affiliate_url, '_blank')}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Buy Now
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <CardContent className="p-4 space-y-3">
+                        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+                          {product.name}
+                        </h3>
+                        
+                        {product.description && (
+                          <p className="text-xs text-gray-600 line-clamp-2">{product.description}</p>
+                        )}
+                        
+                        {product.rating && (
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="font-medium">{product.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-lg font-bold text-green-600">
+                              ${product.price?.toFixed(2) || 'N/A'}
+                            </span>
+                            {product.sale_price && product.sale_price !== product.price && (
+                              <span className="text-sm text-gray-500 line-through">
+                                ${product.sale_price.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <Button
+                          className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+                          onClick={() => product.affiliate_url && window.open(product.affiliate_url, '_blank')}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Buy Now
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
