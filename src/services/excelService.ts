@@ -3,11 +3,15 @@ import { RapidApiProduct } from '@/types/rapidApi';
 
 export class ExcelService {
   static exportToExcel(products: RapidApiProduct[], selectedColumns?: string[]): void {
-    // User's exact template columns first, then additional API fields
+    // Complete A to AU columns (47 total) - User's template columns
     const userTemplateHeaders = [
       'affiliate_link', 'title', 'image_url', 'gallery_image_urls', 'description', 'price', 'sale_price', 
       'rating', 'review_1', 'review_2', 'category', 'tags', 'sku', 'status', 'date_added', 'cta',
-      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action'
+      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action',
+      'brand', 'model', 'color', 'size', 'weight', 'dimensions', 'material', 'warranty', 'manufacturer',
+      'upc', 'isbn', 'shipping_weight', 'package_dimensions', 'item_weight', 'product_dimensions',
+      'batteries_required', 'batteries_included', 'assembly_required', 'country_of_origin', 'target_audience',
+      'age_range', 'style', 'pattern', 'features', 'compatibility', 'certification', 'energy_efficiency'
     ];
     
     // Additional API fields not in user template
@@ -203,6 +207,35 @@ export class ExcelService {
       case 'specifications': return generateSpecs();
       case 'custom_attributes': return product.coupon_text || '';
       case 'action': return 'View Product';
+      
+      // Additional template columns (brand to energy_efficiency)
+      case 'brand': return product.product_byline || '';
+      case 'model': return product.asin;
+      case 'color': return '';
+      case 'size': return product.standing_screen_display_size || '';
+      case 'weight': return '';
+      case 'dimensions': return product.standing_screen_display_size || '';
+      case 'material': return '';
+      case 'warranty': return '';
+      case 'manufacturer': return product.product_byline || '';
+      case 'upc': return '';
+      case 'isbn': return '';
+      case 'shipping_weight': return '';
+      case 'package_dimensions': return '';
+      case 'item_weight': return '';
+      case 'product_dimensions': return product.standing_screen_display_size || '';
+      case 'batteries_required': return '';
+      case 'batteries_included': return '';
+      case 'assembly_required': return '';
+      case 'country_of_origin': return '';
+      case 'target_audience': return '';
+      case 'age_range': return '';
+      case 'style': return '';
+      case 'pattern': return '';
+      case 'features': return product.about_product?.join('; ') || '';
+      case 'compatibility': return '';
+      case 'certification': return product.climate_pledge_friendly ? 'Climate Pledge Friendly' : '';
+      case 'energy_efficiency': return product.climate_pledge_friendly ? 'Energy Star' : '';
       
       // Direct API field mapping
       default: return (product as any)[header] || '';
