@@ -134,8 +134,8 @@ export const ExcelExportTest: React.FC = () => {
             <p><strong>Review 1:</strong> {sampleRapidApiProducts[0].customers_say}</p>
             <p><strong>Review 2:</strong> {sampleRapidApiProducts[0].about_product?.[0]}</p>
             <p><strong>Category:</strong> {sampleRapidApiProducts[0].product_byline}</p>
-            <p><strong>Price:</strong> {sampleRapidApiProducts[0].product_price}</p>
-            <p><strong>Sale Price:</strong> {sampleRapidApiProducts[0].product_original_price}</p>
+            <p><strong>Price:</strong> {sampleRapidApiProducts[0].product_original_price || sampleRapidApiProducts[0].product_price}</p>
+            <p><strong>Sale Price:</strong> {sampleRapidApiProducts[0].product_price}</p>
           </div>
         </div>
       </CardContent>
