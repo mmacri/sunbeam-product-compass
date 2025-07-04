@@ -295,8 +295,8 @@ export class ExcelService {
       case 'image_url': return product.product_photo;
       case 'gallery_image_urls': return '';
       case 'description': return generateDescription();
-      case 'price': return product.product_price;
-      case 'sale_price': return product.product_original_price || '';
+      case 'price': return product.product_original_price || product.product_price;
+      case 'sale_price': return product.product_price;
       case 'rating': return product.product_star_rating;
       case 'category': return product.product_byline || 'Electronics';
       case 'tags': return generateTags();
@@ -383,8 +383,8 @@ export class ExcelService {
       case 'image_url': return product.product_photo;
       case 'gallery_image_urls': return '';
       case 'description': return generateDescription();
-      case 'price': return product.product_price;
-      case 'sale_price': return product.product_original_price || '';
+      case 'price': return product.product_original_price || product.product_price;
+      case 'sale_price': return product.product_price;
       case 'rating': return product.product_star_rating;
       case 'review_1': return product.customers_say || (product.about_product?.[0] || '');
       case 'review_2': return product.about_product?.[1] || product.about_product?.[2] || '';
