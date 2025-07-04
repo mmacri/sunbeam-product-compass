@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Filter, List, Grid, Package } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Filter, List, Grid, Package, Star, ShoppingCart } from 'lucide-react';
 import { RapidApiProduct } from '@/types/rapidApi';
-import { EnhancedProductCard } from '@/components/EnhancedProductCard';
 
 interface UnifiedProductListProps {
   products: RapidApiProduct[];
@@ -191,24 +191,213 @@ export const UnifiedProductList: React.FC<UnifiedProductListProps> = ({
 
       {/* Products Display */}
       <div>
-        {viewMode === 'grid' ? (
+{viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredAndSortedProducts.map((product) => (
-              <EnhancedProductCard
-                key={product.asin}
-                product={product}
-                onProductClick={onProductClick}
-              />
+              <Card 
+                key={product.asin} 
+                className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                onClick={() => onProductClick(product.asin)}
+              >
+                <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
+                  <img
+                    src={product.product_photo}
+                    alt={product.product_title}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                
+                <CardContent className="p-4 space-y-3">
+                  <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+                    {product.product_title}
+                  </h3>
+                  {product.product_byline && (
+                    <p className="text-xs text-gray-600 line-clamp-1">{product.product_byline}</p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-medium">{product.product_star_rating || 'N/A'}</span>
+                      <span className="text-gray-500 text-sm">({product.product_num_ratings?.toLocaleString() || 0})</span>
+                    </div>
+                    {product.sales_volume && (
+                      <span className="text-xs text-blue-600">{product.sales_volume}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-bold text-green-600">
+                        {product.product_price || 'N/A'}
+                      </span>
+                      {product.product_original_price && 
+                        product.product_original_price !== product.product_price && (
+                        <span className="text-sm text-gray-500 line-through">
+                          {product.product_original_price}
+                        </span>
+                      )}
+                    </div>
+                    {product.unit_count > 1 && (
+                      <p className="text-xs text-gray-600">
+                        {product.unit_price} per unit
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {product.is_best_seller && (
+                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                        Best Seller
+                      </Badge>
+                    )}
+                    {product.is_amazon_choice && (
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                        Amazon&apos;s Choice
+                      </Badge>
+                    )}
+                    {product.is_prime && (
+                      <Badge variant="outline" className="text-xs">Prime</Badge>
+                    )}
+                    {product.climate_pledge_friendly && (
+                      <Badge variant="outline" className="text-xs">Eco-Friendly</Badge>
+                    )}
+                  </div>
+
+                  {product.coupon_text && (
+                    <div className="text-xs text-green-600 font-medium bg-green-50 p-2 rounded">
+                      {product.coupon_text}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const affiliateUrl = `http://www.amazon.com/dp/${product.asin}/ref=nosim?tag=homefitrecove-20`;
+                        window.open(affiliateUrl, '_blank');
+                      }}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-1" />
+                      Buy Now
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onProductClick(product.asin);
+                      }}
+                    >
+                      Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         ) : (
           <div className="space-y-6">
             {filteredAndSortedProducts.map((product) => (
-              <EnhancedProductCard
-                key={product.asin}
-                product={product}
-                onProductClick={onProductClick}
-              />
+              <Card 
+                key={product.asin} 
+                className="overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                onClick={() => onProductClick(product.asin)}
+              >
+                <div className="flex">
+                  <div className="w-48 bg-gray-50 flex items-center justify-center p-4">
+                    <img
+                      src={product.product_photo}
+                      alt={product.product_title}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  
+                  <CardContent className="flex-1 p-4 space-y-3">
+                    <h3 className="font-semibold text-lg leading-tight">
+                      {product.product_title}
+                    </h3>
+                    {product.product_byline && (
+                      <p className="text-sm text-gray-600">{product.product_byline}</p>
+                    )}
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{product.product_star_rating || 'N/A'}</span>
+                        <span className="text-gray-500 text-sm">({product.product_num_ratings?.toLocaleString() || 0})</span>
+                      </div>
+                      {product.sales_volume && (
+                        <span className="text-sm text-blue-600">{product.sales_volume}</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold text-green-600">
+                          {product.product_price || 'N/A'}
+                        </span>
+                        {product.product_original_price && 
+                          product.product_original_price !== product.product_price && (
+                          <span className="text-lg text-gray-500 line-through">
+                            {product.product_original_price}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {product.is_best_seller && (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                          Best Seller
+                        </Badge>
+                      )}
+                      {product.is_amazon_choice && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          Amazon&apos;s Choice
+                        </Badge>
+                      )}
+                      {product.is_prime && (
+                        <Badge variant="outline">Prime</Badge>
+                      )}
+                      {product.climate_pledge_friendly && (
+                        <Badge variant="outline">Eco-Friendly</Badge>
+                      )}
+                    </div>
+
+                    {product.coupon_text && (
+                      <div className="text-sm text-green-600 font-medium bg-green-50 p-2 rounded">
+                        {product.coupon_text}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const affiliateUrl = `http://www.amazon.com/dp/${product.asin}/ref=nosim?tag=homefitrecove-20`;
+                          window.open(affiliateUrl, '_blank');
+                        }}
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Buy Now
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onProductClick(product.asin);
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
             ))}
           </div>
         )}
