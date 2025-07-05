@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { RapidApiProduct } from '@/types/rapidApi';
+import { RapidApiService } from '@/services/rapidApi';
 
 export const useProductDatabase = () => {
   // Helper function to convert Amazon URL to affiliate URL
@@ -18,7 +19,44 @@ export const useProductDatabase = () => {
       let savedCount = 0;
       let updatedCount = 0;
 
-      for (const product of selectedProducts) {
+      // First, enhance all products with real review data
+      console.log('Fetching real review data for', selectedProducts.length, 'products...');
+      const enhancedProducts = await Promise.all(
+        selectedProducts.map(async (product, index) => {
+          try {
+            console.log(`Fetching reviews for product ${index + 1}/${selectedProducts.length}: ${product.product_title}`);
+            const reviewsResponse = await RapidApiService.getProductReviews(product.asin, 'US', 1);
+            
+            const topReviews = reviewsResponse.reviews?.slice(0, 2) || [];
+            
+            return {
+              ...product,
+              // Add fetched review data
+              review_1_text: topReviews[0]?.review_comment || '',
+              review_1_title: topReviews[0]?.review_title || '',
+              review_1_rating: topReviews[0]?.review_star_rating || '',
+              review_2_text: topReviews[1]?.review_comment || '',
+              review_2_title: topReviews[1]?.review_title || '',
+              review_2_rating: topReviews[1]?.review_star_rating || '',
+              total_reviews_fetched: reviewsResponse.total_reviews || 0
+            };
+          } catch (error) {
+            console.error(`Failed to fetch reviews for ${product.asin}:`, error);
+            return {
+              ...product,
+              review_1_text: '',
+              review_1_title: '',
+              review_1_rating: '',
+              review_2_text: '', 
+              review_2_title: '',
+              review_2_rating: '',
+              total_reviews_fetched: 0
+            };
+          }
+        })
+      );
+
+      for (const product of enhancedProducts) {
         // Transform RapidAPI product to database format
         const priceValue = parseFloat(product.product_price?.replace(/[^0-9.]/g, '') || '0');
         const salePriceValue = product.product_original_price ? parseFloat(product.product_original_price.replace(/[^0-9.]/g, '') || '0') : null;
@@ -78,7 +116,15 @@ export const useProductDatabase = () => {
             is_best_seller: product.is_best_seller,
             is_amazon_choice: product.is_amazon_choice,
             is_prime: product.is_prime,
-            climate_pledge_friendly: product.climate_pledge_friendly
+            climate_pledge_friendly: product.climate_pledge_friendly,
+            // Store real review data from API
+            review_1_text: (product as any).review_1_text || '',
+            review_1_title: (product as any).review_1_title || '',
+            review_1_rating: (product as any).review_1_rating || '',
+            review_2_text: (product as any).review_2_text || '',
+            review_2_title: (product as any).review_2_title || '',
+            review_2_rating: (product as any).review_2_rating || '',
+            total_reviews_fetched: (product as any).total_reviews_fetched || 0
           },
           attributes: {
             bestseller: product.is_best_seller,

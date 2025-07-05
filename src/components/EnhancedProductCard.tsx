@@ -49,6 +49,7 @@ export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({ produc
     return product.attributes?.product_num_ratings_parsed || 
            product.attributes?.originalCsvData?.product_num_ratings_parsed || 
            product.attributes?.product_num_ratings ||
+           product.specifications?.num_ratings ||
            null;
   };
 
@@ -64,10 +65,27 @@ export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({ produc
            null;
   };
 
+  // Get real reviews from specifications (stored from API)
+  const getReviewData = () => {
+    if (product.specifications) {
+      return {
+        review1Text: product.specifications.review_1_text || '',
+        review1Title: product.specifications.review_1_title || '',
+        review1Rating: product.specifications.review_1_rating || '',
+        review2Text: product.specifications.review_2_text || '',
+        review2Title: product.specifications.review_2_title || '',
+        review2Rating: product.specifications.review_2_rating || '',
+        totalReviews: product.specifications.total_reviews_fetched || 0
+      };
+    }
+    return null;
+  };
+
   const lowestPrice = getLowestPrice();
   const reviewCount = getReviewCount();
   const salesVolume = getSalesVolume();
   const deliveryInfo = getDeliveryInfo();
+  const reviewData = getReviewData();
 
   const formatPrice = (price: number | null) => price ? `$${price.toFixed(2)}` : 'N/A';
   const formatNumber = (num: number | null | string) => {
@@ -179,6 +197,46 @@ export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({ produc
             <Badge variant="outline" className="text-xs text-green-700">Eco-Friendly</Badge>
           )}
         </div>
+
+        {/* Customer Reviews Section (Real API Data) */}
+        {reviewData && (reviewData.review1Text || reviewData.review2Text) && (
+          <div className="space-y-2 border-t pt-3">
+            <h4 className="text-sm font-semibold text-gray-800">Customer Reviews</h4>
+            {reviewData.review1Text && (
+              <div className="bg-blue-50 p-3 rounded-lg">
+                {reviewData.review1Title && (
+                  <p className="font-medium text-sm text-blue-900 mb-1">{reviewData.review1Title}</p>
+                )}
+                <p className="text-xs text-blue-800 line-clamp-3">{reviewData.review1Text}</p>
+                {reviewData.review1Rating && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-blue-700">{reviewData.review1Rating}/5</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {reviewData.review2Text && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                {reviewData.review2Title && (
+                  <p className="font-medium text-sm text-green-900 mb-1">{reviewData.review2Title}</p>
+                )}
+                <p className="text-xs text-green-800 line-clamp-3">{reviewData.review2Text}</p>
+                {reviewData.review2Rating && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-green-700">{reviewData.review2Rating}/5</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {reviewData.totalReviews > 0 && (
+              <p className="text-xs text-gray-500">
+                📊 Total reviews fetched: {reviewData.totalReviews}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Delivery Information */}
         {deliveryInfo && (
