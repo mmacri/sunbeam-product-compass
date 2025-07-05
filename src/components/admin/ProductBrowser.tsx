@@ -3,6 +3,7 @@ import { useProductBrowserData } from '@/hooks/useProductBrowserData';
 import { useProductBrowserSelection } from '@/hooks/useProductBrowserSelection';
 import { useProductOperations } from '@/hooks/useProductOperations';
 import { useProductDatabase } from '@/hooks/useProductDatabase';
+import { supabase } from '@/integrations/supabase/client';
 import { ProductBrowserHeader } from './ProductBrowserHeader';
 import { ProductBrowserControls } from './ProductBrowserControls';
 import { ProductBrowserActions } from './ProductBrowserActions';
@@ -147,6 +148,32 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     }
   };
 
+  const handleMergeProductsWithFeedback = async () => {
+    onShowMessage('Merging duplicate products... This may take a moment.', 'success');
+    
+    try {
+      const { data, error } = await supabase.rpc('merge_duplicate_products');
+      
+      if (error) {
+        onShowMessage(`Error merging products: ${error.message}`, 'error');
+        onLogAction('merge_products_error', { error: error.message });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const totalMerged = data.reduce((sum: number, item: any) => sum + item.merged_count, 0);
+        onShowMessage(`Successfully merged ${totalMerged} duplicate products across ${data.length} product groups`);
+        onLogAction('merge_products_success', { mergedCount: totalMerged, groups: data.length });
+      } else {
+        onShowMessage('No duplicate products found to merge');
+        onLogAction('merge_products_success', { mergedCount: 0, groups: 0 });
+      }
+    } catch (error) {
+      onShowMessage(`Failed to merge products: ${error.message}`, 'error');
+      onLogAction('merge_products_error', { error: error.message });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ProductBrowserHeader
@@ -177,6 +204,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         onExportSelected={handleExportWithFeedback}
         onSaveSelectedForUsers={handleSaveSelectedForUsersWithFeedback}
         onUpdateDatabase={handleUpdateDatabaseWithFeedback}
+        onMergeProducts={handleMergeProductsWithFeedback}
         onImport={handleImportWithFeedback}
       />
 

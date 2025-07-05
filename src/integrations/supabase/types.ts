@@ -778,6 +778,16 @@ export type Database = {
         Args: Record<PropertyKey, never> | { user_id: string }
         Returns: boolean
       }
+      merge_duplicate_products: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action_taken: string
+          product_name: string
+          merged_count: number
+          kept_id: string
+          deleted_ids: string
+        }[]
+      }
     }
     Enums: {
       user_role: "admin" | "editor" | "contributor" | "user"

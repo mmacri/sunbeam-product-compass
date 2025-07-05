@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Upload, Save, Database } from 'lucide-react';
+import { Merge } from 'lucide-react';
 
 interface ProductBrowserActionsProps {
   filteredProductsCount: number;
@@ -11,6 +11,7 @@ interface ProductBrowserActionsProps {
   onExportSelected: () => void;
   onSaveSelectedForUsers: () => void;
   onUpdateDatabase: () => void;
+  onMergeProducts: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -22,6 +23,7 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
   onExportSelected,
   onSaveSelectedForUsers,
   onUpdateDatabase,
+  onMergeProducts,
   onImport
 }) => {
   return (
@@ -69,6 +71,14 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
       >
         <Database className="w-4 h-4 mr-2" />
         Update Database ({selectedAsinsCount})
+      </Button>
+      <Button
+        onClick={onMergeProducts}
+        size="sm"
+        className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
+      >
+        <Merge className="w-4 h-4 mr-2" />
+        Merge Duplicates
       </Button>
       <div className="flex items-center gap-2">
         <input
