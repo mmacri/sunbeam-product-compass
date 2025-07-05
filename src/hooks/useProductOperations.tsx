@@ -9,16 +9,14 @@ export const useProductOperations = () => {
     }
 
     try {
-      // Use the enhanced export method that fetches real reviews
-      await ExcelService.exportToExcelWithReviews(selectedProducts, selectedColumns, (current, total) => {
+      // Use the unified export method that now always fetches real reviews
+      await ExcelService.exportToExcel(selectedProducts, selectedColumns, (current, total) => {
         console.log(`Progress: ${current}/${total} products processed`);
       });
       return { success: true, count: selectedProducts.length, type: 'with_reviews' };
     } catch (error) {
-      console.error('Export with reviews failed:', error);
-      // Fallback to regular export
-      ExcelService.exportToExcel(selectedProducts, selectedColumns);
-      return { success: true, count: selectedProducts.length, type: 'fallback' };
+      console.error('Export failed:', error);
+      return { success: false, error: `Export failed: ${error.message}` };
     }
   };
 

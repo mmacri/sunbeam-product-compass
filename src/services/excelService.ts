@@ -2,64 +2,8 @@ import { RapidApiProduct, RapidApiReview } from '@/types/rapidApi';
 import { RapidApiService } from './rapidApi';
 
 export class ExcelService {
-  static exportToExcel(products: RapidApiProduct[], selectedColumns?: string[]): void {
-    // Complete A to AU columns (47 total) - User's template columns
-    const userTemplateHeaders = [
-      'affiliate_link', 'title', 'image_url', 'gallery_image_urls', 'description', 'price', 'sale_price', 
-      'rating', 'review_1', 'review_2', 'category', 'tags', 'sku', 'status', 'date_added', 'cta',
-      'affiliate_network', 'commission_rate', 'availability', 'in_stock', 'specifications', 'custom_attributes', 'action',
-      'brand', 'model', 'color', 'size', 'weight', 'dimensions', 'material', 'warranty', 'manufacturer',
-      'upc', 'isbn', 'shipping_weight', 'package_dimensions', 'item_weight', 'product_dimensions',
-      'batteries_required', 'batteries_included', 'assembly_required', 'country_of_origin', 'target_audience',
-      'age_range', 'style', 'pattern', 'features', 'compatibility', 'certification', 'energy_efficiency'
-    ];
-    
-    // Additional API fields not in user template
-    const additionalApiFields = [
-      'asin', 'product_title', 'unit_price', 'unit_count', 'currency', 'product_num_ratings', 'sales_volume',
-      'product_url', 'product_photo', 'product_num_offers', 'product_minimum_offer_price', 'is_best_seller', 
-      'is_amazon_choice', 'is_prime', 'climate_pledge_friendly', 'has_variations', 'delivery', 'product_byline', 
-      'coupon_text', 'product_badge', 'product_original_price', 'standing_screen_display_size', 
-      'memory_storage_capacity', 'ram_memory_installed_size'
-    ];
-
-    const allHeaders = [...userTemplateHeaders, ...additionalApiFields];
-    const headersToUse = selectedColumns && selectedColumns.length > 0 ? selectedColumns : allHeaders;
-    
-    const csvContent = [
-      headersToUse.join(','),
-      ...products.map(product => 
-        headersToUse.map(header => {
-          let value = this.mapProductData(product, header);
-          if (typeof value === 'string') {
-            return `"${value.replace(/"/g, '""')}"`;
-          } else if (typeof value === 'boolean') {
-            return value;
-          } else if (typeof value === 'number') {
-            return value;
-          } else {
-            return `"${value || ''}"`;
-          }
-        }).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `sunbeam-products-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // Enhanced export with real reviews fetching
-  static async exportToExcelWithReviews(products: RapidApiProduct[], selectedColumns?: string[], onProgress?: (current: number, total: number) => void): Promise<void> {
-    console.log('Starting enhanced export with reviews for', products.length, 'products');
+  static async exportToExcel(products: RapidApiProduct[], selectedColumns?: string[], onProgress?: (current: number, total: number) => void): Promise<void> {
+    console.log('Starting export with reviews for', products.length, 'products');
     
     // Fetch reviews for each product
     const enhancedProducts = await Promise.all(
@@ -99,11 +43,6 @@ export class ExcelService {
       })
     );
 
-    // Now export with enhanced data
-    this.exportEnhancedProductsToCSV(enhancedProducts, selectedColumns);
-  }
-
-  private static exportEnhancedProductsToCSV(enhancedProducts: any[], selectedColumns?: string[]): void {
     // Complete A to AU columns (47 total) - User's template columns
     const userTemplateHeaders = [
       'affiliate_link', 'title', 'image_url', 'gallery_image_urls', 'description', 'price', 'sale_price', 
@@ -131,7 +70,7 @@ export class ExcelService {
       headersToUse.join(','),
       ...enhancedProducts.map(product => 
         headersToUse.map(header => {
-          let value = this.mapEnhancedProductData(product, header);
+          let value = this.mapProductData(product, header);
           if (typeof value === 'string') {
             return `"${value.replace(/"/g, '""')}"`;
           } else if (typeof value === 'boolean') {
@@ -253,7 +192,7 @@ export class ExcelService {
     return result;
   }
 
-  private static mapEnhancedProductData(product: any, header: string): any {
+  private static mapProductData(product: any, header: string): any {
     // Enhanced mapping that uses fetched review data
     const getAffiliateUrl = (asin: string) => `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
     
@@ -298,96 +237,6 @@ export class ExcelService {
       case 'price': return product.product_original_price || product.product_price;
       case 'sale_price': return product.product_price;
       case 'rating': return product.product_star_rating;
-      case 'category': return product.product_byline || 'Electronics';
-      case 'tags': return generateTags();
-      case 'sku': return product.asin;
-      case 'status': return 'Active';
-      case 'date_added': return new Date().toISOString().split('T')[0];
-      case 'cta': return 'Buy Now - Best Price';
-      case 'affiliate_network': return 'Amazon Associates';
-      case 'commission_rate': return '4-8%';
-      case 'availability': return product.product_availability || 'In Stock';
-      case 'in_stock': return product.product_availability !== 'Out of Stock' ? 'Yes' : 'No';
-      case 'specifications': return generateSpecs();
-      case 'custom_attributes': return product.coupon_text || '';
-      case 'action': return 'View Product';
-      
-      // Additional template columns
-      case 'brand': return product.product_byline || '';
-      case 'model': return product.asin;
-      case 'color': return '';
-      case 'size': return product.standing_screen_display_size || '';
-      case 'weight': return '';
-      case 'dimensions': return product.standing_screen_display_size || '';
-      case 'material': return '';
-      case 'warranty': return '';
-      case 'manufacturer': return product.product_byline || '';
-      case 'upc': return '';
-      case 'isbn': return '';
-      case 'shipping_weight': return '';
-      case 'package_dimensions': return '';
-      case 'item_weight': return '';
-      case 'product_dimensions': return product.standing_screen_display_size || '';
-      case 'batteries_required': return '';
-      case 'batteries_included': return '';
-      case 'assembly_required': return '';
-      case 'country_of_origin': return '';
-      case 'target_audience': return '';
-      case 'age_range': return '';
-      case 'style': return '';
-      case 'pattern': return '';
-      case 'features': return product.about_product?.join('; ') || '';
-      case 'compatibility': return '';
-      case 'certification': return product.climate_pledge_friendly ? 'Climate Pledge Friendly' : '';
-      case 'energy_efficiency': return product.climate_pledge_friendly ? 'Energy Star' : '';
-      
-      // Direct API field mapping
-      default: return (product as any)[header] || '';
-    }
-  }
-
-  private static mapProductData(product: RapidApiProduct, header: string): any {
-    const getAffiliateUrl = (asin: string) => `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
-    
-    const generateSpecs = () => {
-      const specs = [];
-      if (product.standing_screen_display_size) specs.push(`Display: ${product.standing_screen_display_size}`);
-      if (product.memory_storage_capacity) specs.push(`Storage: ${product.memory_storage_capacity}`);
-      if (product.ram_memory_installed_size) specs.push(`RAM: ${product.ram_memory_installed_size}`);
-      if (product.unit_count > 1) specs.push(`Unit Count: ${product.unit_count}`);
-      return specs.join('; ');
-    };
-
-    const generateTags = () => {
-      const tags = [];
-      if (product.is_best_seller) tags.push('Best Seller');
-      if (product.is_amazon_choice) tags.push('Amazon Choice');
-      if (product.is_prime) tags.push('Prime');
-      if (product.climate_pledge_friendly) tags.push('Eco-Friendly');
-      if (product.product_badge) tags.push(product.product_badge);
-      return tags.join(', ');
-    };
-
-    const generateDescription = () => {
-      const parts = [];
-      if (product.product_description) parts.push(product.product_description);
-      if (product.about_product?.length) parts.push(product.about_product.slice(0, 3).join(' '));
-      if (product.customers_say) parts.push(`Customers say: ${product.customers_say}`);
-      return parts.join(' ') || `High-quality ${product.product_title.toLowerCase()} with excellent customer reviews.`;
-    };
-
-    switch (header) {
-      // User's template mapping
-      case 'affiliate_link': return getAffiliateUrl(product.asin);
-      case 'title': return product.product_title;
-      case 'image_url': return product.product_photo;
-      case 'gallery_image_urls': return '';
-      case 'description': return generateDescription();
-      case 'price': return product.product_original_price || product.product_price;
-      case 'sale_price': return product.product_price;
-      case 'rating': return product.product_star_rating;
-      case 'review_1': return product.customers_say || (product.about_product?.[0] || '');
-      case 'review_2': return product.about_product?.[1] || product.about_product?.[2] || '';
       case 'category': return product.product_byline || 'Electronics';
       case 'tags': return generateTags();
       case 'sku': return product.asin;

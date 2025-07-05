@@ -99,13 +99,13 @@ export const ExcelExportTest: React.FC = () => {
   };
 
   const testEnhancedExport = async () => {
-    console.log('Testing enhanced Excel export with reviews API:', sampleRapidApiProducts);
+    console.log('Testing export with reviews API:', sampleRapidApiProducts);
     try {
-      await ExcelService.exportToExcelWithReviews(sampleRapidApiProducts, undefined, (current, total) => {
+      await ExcelService.exportToExcel(sampleRapidApiProducts, undefined, (current, total) => {
         console.log(`Test progress: ${current}/${total} products processed`);
       });
     } catch (error) {
-      console.error('Enhanced export test failed:', error);
+      console.error('Export test failed:', error);
     }
   };
 
@@ -123,7 +123,7 @@ export const ExcelExportTest: React.FC = () => {
             Test Selected Columns Export
           </Button>
           <Button onClick={testEnhancedExport} variant="default">
-            Test Enhanced Export (With Reviews)
+            Test Export (With Reviews)
           </Button>
         </div>
         
