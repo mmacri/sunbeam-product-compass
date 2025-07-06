@@ -2,12 +2,14 @@
 import { ProductSearchService } from './rapidApi/ProductSearchService';
 import { ProductDetailsService } from './rapidApi/ProductDetailsService';
 import { DataTransformationService } from './rapidApi/DataTransformationService';
+import { DealsService } from './rapidApi/DealsService';
 import { 
   RapidApiSearchResponse, 
   RapidApiProductDetails, 
   RapidApiReviewsResponse, 
   RapidApiOffersResponse, 
   RapidApiCategoryResponse,
+  RapidApiDealsResponse,
   ProductData
 } from '../types/rapidApi';
 
@@ -18,6 +20,7 @@ export class RapidApiService {
     this.apiKey = apiKey;
     ProductSearchService.setApiKey(apiKey);
     ProductDetailsService.setApiKey(apiKey);
+    DealsService.setApiKey(apiKey);
   }
 
   // Product Search
@@ -50,6 +53,34 @@ export class RapidApiService {
   // Products by Category
   static async getProductsByCategory(category: string, country: string = 'US', page: number = 1): Promise<RapidApiCategoryResponse> {
     return await ProductSearchService.getProductsByCategory(category, country, page);
+  }
+
+  // Deals
+  static async getDeals(options: {
+    country?: string;
+    minProductStarRating?: string;
+    priceRange?: string;
+    discountRange?: string;
+    page?: number;
+  } = {}): Promise<RapidApiDealsResponse> {
+    return await DealsService.fetchDeals(options);
+  }
+
+  // Deals by ASINs
+  static async getDealsByASINs(asins: string[], country: string = 'US'): Promise<RapidApiDealsResponse> {
+    return await DealsService.fetchDealsByASINs(asins, country);
+  }
+
+  // Deals with Filter
+  static async getDealsWithFilter(options: {
+    country?: string;
+    minRating?: number;
+    maxPrice?: number;
+    minDiscount?: number;
+    dealTypes?: string[];
+    onlyPrime?: boolean;
+  } = {}): Promise<RapidApiDealsResponse> {
+    return await DealsService.fetchDealsWithFilter(options);
   }
 
   // Enhanced Product Data Extraction

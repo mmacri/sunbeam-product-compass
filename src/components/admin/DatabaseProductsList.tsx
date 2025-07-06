@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useDatabaseProducts } from '@/hooks/useDatabaseProducts';
+import { useDeals } from '@/hooks/useDeals';
 import { EnhancedProductCard } from '@/components/EnhancedProductCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, DollarSign, Zap } from 'lucide-react';
 
 interface DatabaseProductsListProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -32,12 +33,28 @@ export const DatabaseProductsList: React.FC<DatabaseProductsListProps> = ({
     refetch
   } = useDatabaseProducts();
 
+  const { syncDeals, syncing, deals } = useDeals();
+
   const handleRefresh = async () => {
     try {
       await refetch();
       onShowMessage(`Refreshed ${allProducts.length} database products`);
     } catch (err) {
       onShowMessage('Failed to refresh products', 'error');
+    }
+  };
+
+  const handleSyncDeals = async () => {
+    try {
+      const result = await syncDeals();
+      
+      if (result.success) {
+        onShowMessage(`Deal sync completed: ${result.dealsProcessed} processed, ${result.dealsAdded} added, ${result.dealsUpdated} updated`);
+      } else {
+        onShowMessage(`Deal sync failed: ${result.error}`, 'error');
+      }
+    } catch (err) {
+      onShowMessage('Failed to sync deals', 'error');
     }
   };
 
@@ -79,11 +96,21 @@ export const DatabaseProductsList: React.FC<DatabaseProductsListProps> = ({
               Database Products
               <Badge variant="secondary">{allProducts.length} total</Badge>
               <Badge variant="outline">{products.length} filtered</Badge>
+              <Badge variant="default" className="flex items-center gap-1">
+                <DollarSign className="w-3 h-3" />
+                {deals.length} deals
+              </Badge>
             </CardTitle>
-            <Button onClick={handleRefresh} variant="outline" size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleSyncDeals} disabled={syncing} variant="outline" size="sm">
+                <Zap className={`w-4 h-4 mr-2 ${syncing ? 'animate-pulse' : ''}`} />
+                {syncing ? 'Syncing...' : 'Sync Deals'}
+              </Button>
+              <Button onClick={handleRefresh} variant="outline" size="sm">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

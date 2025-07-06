@@ -474,6 +474,68 @@ export type Database = {
           },
         ]
       }
+      product_deals: {
+        Row: {
+          asin: string
+          created_at: string
+          deal_end_date: string | null
+          deal_price: number | null
+          deal_start_date: string | null
+          deal_title: string | null
+          deal_type: string | null
+          deal_url: string | null
+          discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          original_price: number | null
+          product_id: string | null
+          raw_deal_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          asin: string
+          created_at?: string
+          deal_end_date?: string | null
+          deal_price?: number | null
+          deal_start_date?: string | null
+          deal_title?: string | null
+          deal_type?: string | null
+          deal_url?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          original_price?: number | null
+          product_id?: string | null
+          raw_deal_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          asin?: string
+          created_at?: string
+          deal_end_date?: string | null
+          deal_price?: number | null
+          deal_start_date?: string | null
+          deal_title?: string | null
+          deal_type?: string | null
+          deal_url?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          original_price?: number | null
+          product_id?: string | null
+          raw_deal_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_deals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           affiliate_link_id: string | null
@@ -488,7 +550,10 @@ export type Database = {
           commission_rate: number | null
           conversion_count: number | null
           created_at: string
+          current_deal_id: string | null
+          deal_last_updated: string | null
           description: string | null
+          has_active_deal: boolean | null
           id: string
           image_url: string | null
           in_stock: boolean | null
@@ -515,7 +580,10 @@ export type Database = {
           commission_rate?: number | null
           conversion_count?: number | null
           created_at?: string
+          current_deal_id?: string | null
+          deal_last_updated?: string | null
           description?: string | null
+          has_active_deal?: boolean | null
           id?: string
           image_url?: string | null
           in_stock?: boolean | null
@@ -542,7 +610,10 @@ export type Database = {
           commission_rate?: number | null
           conversion_count?: number | null
           created_at?: string
+          current_deal_id?: string | null
+          deal_last_updated?: string | null
           description?: string | null
+          has_active_deal?: boolean | null
           id?: string
           image_url?: string | null
           in_stock?: boolean | null
@@ -569,6 +640,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_current_deal_id_fkey"
+            columns: ["current_deal_id"]
+            isOneToOne: false
+            referencedRelation: "product_deals"
             referencedColumns: ["id"]
           },
         ]
@@ -755,7 +833,10 @@ export type Database = {
           commission_rate: number | null
           conversion_count: number | null
           created_at: string
+          current_deal_id: string | null
+          deal_last_updated: string | null
           description: string | null
+          has_active_deal: boolean | null
           id: string
           image_url: string | null
           in_stock: boolean | null

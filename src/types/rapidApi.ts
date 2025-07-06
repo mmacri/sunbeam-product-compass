@@ -127,6 +127,37 @@ export interface RapidApiCategoryResponse {
   products: RapidApiProduct[];
 }
 
+export interface RapidApiDeal {
+  asin: string;
+  product_title: string;
+  product_url: string;
+  product_photo: string;
+  product_price: string;
+  product_original_price: string;
+  currency: string;
+  discount_percentage: number;
+  deal_type: string;
+  deal_start_time?: string;
+  deal_end_time?: string;
+  product_star_rating: string;
+  product_num_ratings: number;
+  is_prime: boolean;
+  is_best_seller: boolean;
+  is_amazon_choice: boolean;
+  deal_badge?: string;
+  savings_amount?: string;
+  coupon_text?: string;
+  product_availability?: string;
+}
+
+export interface RapidApiDealsResponse {
+  status: string;
+  request_id: string;
+  country: string;
+  total_deals: number;
+  deals: RapidApiDeal[];
+}
+
 export interface ProductData {
   title: string;
   currentPrice: string;
