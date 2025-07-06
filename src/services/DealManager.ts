@@ -104,10 +104,10 @@ export class DealManager {
     products: Product[]
   ): Promise<{ added: boolean; updated: boolean; deactivated: boolean }> {
     // Find matching product by ASIN
-    const matchingProduct = products.find(p => p.asin === deal.asin);
+    const matchingProduct = products.find(p => p.asin === deal.product_asin);
     
     if (!matchingProduct) {
-      console.log(`No matching product found for ASIN: ${deal.asin}`);
+      console.log(`No matching product found for ASIN: ${deal.product_asin}`);
       return { added: false, updated: false, deactivated: false };
     }
 
@@ -115,12 +115,12 @@ export class DealManager {
     const { data: existingDeal } = await supabase
       .from('product_deals')
       .select('*')
-      .eq('asin', deal.asin)
+      .eq('asin', deal.product_asin)
       .eq('is_active', true)
       .single();
 
     const dealData = this.transformDealData(deal, matchingProduct.id);
-    const dealStartTime = deal.deal_start_time ? new Date(deal.deal_start_time) : new Date();
+    const dealStartTime = deal.deal_starts_at ? new Date(deal.deal_starts_at) : new Date();
 
     if (existingDeal) {
       // Check if this deal is newer than existing one
@@ -143,20 +143,20 @@ export class DealManager {
 
   // Transform API deal data to database format
   private static transformDealData(deal: RapidApiDeal, productId: string) {
-    const originalPrice = parseFloat(deal.product_original_price?.replace(/[^0-9.]/g, '') || '0');
-    const dealPrice = parseFloat(deal.product_price?.replace(/[^0-9.]/g, '') || '0');
+    const originalPrice = parseFloat(deal.list_price.amount || '0');
+    const dealPrice = parseFloat(deal.deal_price.amount || '0');
 
     return {
       product_id: productId,
-      asin: deal.asin,
-      deal_title: deal.product_title,
+      asin: deal.product_asin,
+      deal_title: deal.deal_title,
       original_price: originalPrice || null,
       deal_price: dealPrice || null,
-      discount_percentage: deal.discount_percentage || null,
-      deal_start_date: deal.deal_start_time || new Date().toISOString(),
-      deal_end_date: deal.deal_end_time || null,
+      discount_percentage: deal.savings_percentage || null,
+      deal_start_date: deal.deal_starts_at || new Date().toISOString(),
+      deal_end_date: deal.deal_ends_at || null,
       deal_type: deal.deal_type || 'deal',
-      deal_url: deal.product_url,
+      deal_url: deal.deal_url,
       raw_deal_data: deal,
       is_active: true
     };

@@ -38,7 +38,7 @@ export class DealsService extends BaseRapidApiService {
       const allDeals = await this.fetchDeals({ country });
       
       const filteredDeals = allDeals.deals.filter(deal => 
-        asins.includes(deal.asin)
+        asins.includes(deal.product_asin)
       );
 
       return {
@@ -77,14 +77,14 @@ export class DealsService extends BaseRapidApiService {
     // Apply client-side filters
     if (options.maxPrice) {
       filteredDeals = filteredDeals.filter(deal => {
-        const price = parseFloat(deal.product_price.replace(/[^0-9.]/g, ''));
+        const price = parseFloat(deal.deal_price.amount);
         return price <= options.maxPrice!;
       });
     }
 
     if (options.minDiscount) {
       filteredDeals = filteredDeals.filter(deal => 
-        deal.discount_percentage >= options.minDiscount!
+        deal.savings_percentage >= options.minDiscount!
       );
     }
 
@@ -94,9 +94,8 @@ export class DealsService extends BaseRapidApiService {
       );
     }
 
-    if (options.onlyPrime) {
-      filteredDeals = filteredDeals.filter(deal => deal.is_prime);
-    }
+    // Note: Prime filter not available in deals API response structure
+    // Keeping the filter structure but it won't actually filter for Prime deals
 
     return {
       ...allDeals,

@@ -128,26 +128,31 @@ export interface RapidApiCategoryResponse {
 }
 
 export interface RapidApiDeal {
-  asin: string;
-  product_title: string;
-  product_url: string;
-  product_photo: string;
-  product_price: string;
-  product_original_price: string;
-  currency: string;
-  discount_percentage: number;
+  deal_id: string;
   deal_type: string;
-  deal_start_time?: string;
-  deal_end_time?: string;
-  product_star_rating: string;
-  product_num_ratings: number;
-  is_prime: boolean;
-  is_best_seller: boolean;
-  is_amazon_choice: boolean;
-  deal_badge?: string;
-  savings_amount?: string;
-  coupon_text?: string;
-  product_availability?: string;
+  deal_title: string;
+  deal_photo: string;
+  deal_state: string;
+  deal_url: string;
+  canonical_deal_url: string;
+  deal_starts_at: string;
+  deal_ends_at: string;
+  deal_price: {
+    amount: string;
+    currency: string;
+  };
+  list_price: {
+    amount: string;
+    currency: string;
+  };
+  savings_percentage: number;
+  savings_amount: {
+    amount: string;
+    currency: string;
+  };
+  deal_badge: string;
+  type: string;
+  product_asin: string;
 }
 
 export interface RapidApiDealsResponse {
