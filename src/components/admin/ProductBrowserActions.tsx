@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Upload, Save, Database, DollarSign } from 'lucide-react';
+import { Download, Upload, Save, Database, DollarSign, Trash2, RotateCcw } from 'lucide-react';
 import { Merge } from 'lucide-react';
 
 interface ProductBrowserActionsProps {
@@ -9,6 +9,8 @@ interface ProductBrowserActionsProps {
   activeDealsCount?: number;
   onSelectAllFiltered: () => void;
   onClearSelection: () => void;
+  onInvertSelection: () => void;
+  onDeleteSelected: () => void;
   onExportSelected: () => void;
   onSaveSelectedForUsers: () => void;
   onUpdateDatabase: () => void;
@@ -24,6 +26,8 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
   activeDealsCount = 0,
   onSelectAllFiltered,
   onClearSelection,
+  onInvertSelection,
+  onDeleteSelected,
   onExportSelected,
   onSaveSelectedForUsers,
   onUpdateDatabase,
@@ -49,6 +53,26 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
         disabled={selectedAsinsCount === 0}
       >
         Clear Selection
+      </Button>
+      <Button
+        onClick={onInvertSelection}
+        variant="outline"
+        size="sm"
+        disabled={filteredProductsCount === 0}
+        className="flex items-center gap-2"
+      >
+        <RotateCcw className="w-4 h-4" />
+        Invert Selection
+      </Button>
+      <Button
+        onClick={onDeleteSelected}
+        variant="outline"
+        size="sm"
+        disabled={selectedAsinsCount === 0}
+        className="flex items-center gap-2 text-destructive hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete Selected ({selectedAsinsCount})
       </Button>
       <Button
         onClick={onExportSelected}

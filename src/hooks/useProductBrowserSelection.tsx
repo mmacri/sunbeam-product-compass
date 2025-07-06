@@ -40,6 +40,13 @@ export const useProductBrowserSelection = () => {
     setSelectedAsins([]);
   };
 
+  const invertSelection = (filteredProducts: RapidApiProduct[]) => {
+    const asins = filteredProducts.map(p => p.asin);
+    ProductSelectionService.invertSelection(asins);
+    setSelectedAsins(ProductSelectionService.getSelectedAsins());
+    return { count: ProductSelectionService.getSelectedAsins().length };
+  };
+
   const handleColumnSave = (columns: string[]) => {
     setSelectedColumns(columns);
     localStorage.setItem('sunbeam-selected-columns', JSON.stringify(columns));
@@ -51,6 +58,7 @@ export const useProductBrowserSelection = () => {
     toggleSelection,
     selectAllFiltered,
     clearSelection,
+    invertSelection,
     handleColumnSave
   };
 };

@@ -74,4 +74,30 @@ export class ProductSelectionService {
     selected.forEach(p => p.selected = false);
     this.setSelectedProducts(selected);
   }
+
+  static invertSelection(filteredAsins: string[]): void {
+    const selected = this.getSelectedProducts();
+    const currentlySelected = this.getSelectedAsins();
+    
+    // Clear all current selections first
+    selected.forEach(p => p.selected = false);
+    
+    // Select all filtered products that were NOT previously selected
+    filteredAsins.forEach(asin => {
+      if (!currentlySelected.includes(asin)) {
+        const existing = selected.find(p => p.asin === asin);
+        if (existing) {
+          existing.selected = true;
+        } else {
+          selected.push({
+            asin,
+            selected: true,
+            addedAt: new Date().toISOString()
+          });
+        }
+      }
+    });
+    
+    this.setSelectedProducts(selected);
+  }
 }

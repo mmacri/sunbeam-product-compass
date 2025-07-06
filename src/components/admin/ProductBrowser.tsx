@@ -9,6 +9,16 @@ import { ProductBrowserHeader } from './ProductBrowserHeader';
 import { ProductBrowserControls } from './ProductBrowserControls';
 import { ProductBrowserActions } from './ProductBrowserActions';
 import { ProductBrowserGrid } from './ProductBrowserGrid';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent, 
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProductBrowserProps {
   onShowMessage: (message: string, type?: 'success' | 'error') => void;
@@ -20,6 +30,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   onLogAction
 }) => {
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Custom hooks for different concerns
   const {
@@ -44,13 +55,15 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     toggleSelection,
     selectAllFiltered,
     clearSelection,
+    invertSelection,
     handleColumnSave
   } = useProductBrowserSelection();
 
   const {
     exportSelectedProducts,
     handleImport,
-    saveSelectedForUsers
+    saveSelectedForUsers,
+    deleteSelectedProducts
   } = useProductOperations();
 
   const { updateDatabase } = useProductDatabase();
@@ -128,6 +141,32 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     clearSelection();
     onShowMessage('Cleared all selections');
     onLogAction('clear_selection', {});
+  };
+
+  const handleInvertSelectionWithFeedback = () => {
+    const result = invertSelection(filteredProducts);
+    onShowMessage(`Inverted selection: ${result.count} products now selected`);
+    onLogAction('invert_selection', { count: result.count });
+  };
+
+  const handleDeleteSelectedWithFeedback = async () => {
+    const result = await deleteSelectedProducts(products, selectedAsins);
+    if (result.success) {
+      // Remove deleted products from current products list
+      const remainingProducts = products.filter(p => !selectedAsins.includes(p.asin));
+      setProducts(remainingProducts);
+      localStorage.setItem('sunbeam-products', JSON.stringify(remainingProducts));
+      
+      // Clear selection since products are deleted
+      clearSelection();
+      
+      onShowMessage(`Successfully deleted ${result.count} products`);
+      onLogAction('delete_selected_products', { count: result.count });
+    } else {
+      onShowMessage(result.error, 'error');
+      onLogAction('delete_selected_error', { error: result.error });
+    }
+    setShowDeleteDialog(false);
   };
 
   const handleSaveSelectedForUsersWithFeedback = () => {
@@ -228,6 +267,8 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         activeDealsCount={deals.length}
         onSelectAllFiltered={handleSelectAllFilteredWithFeedback}
         onClearSelection={handleClearSelectionWithFeedback}
+        onInvertSelection={handleInvertSelectionWithFeedback}
+        onDeleteSelected={() => setShowDeleteDialog(true)}
         onExportSelected={handleExportWithFeedback}
         onSaveSelectedForUsers={handleSaveSelectedForUsersWithFeedback}
         onUpdateDatabase={handleUpdateDatabaseWithFeedback}
@@ -242,6 +283,27 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
         selectedAsins={selectedAsins}
         onToggleSelection={toggleSelection}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Products</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedAsins.length} selected products? 
+              This will remove them from both the database and local storage. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteSelectedWithFeedback}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete {selectedAsins.length} Products
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

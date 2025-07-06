@@ -1,5 +1,6 @@
 import { ExcelService } from '@/services/excelService';
 import { RapidApiProduct } from '@/types/rapidApi';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useProductOperations = () => {
   const exportSelectedProducts = async (products: RapidApiProduct[], selectedAsins: string[], selectedColumns: string[]) => {
@@ -39,9 +40,47 @@ export const useProductOperations = () => {
     return { success: true, count: selectedProducts.length };
   };
 
+  const deleteSelectedProducts = async (products: RapidApiProduct[], selectedAsins: string[]) => {
+    const selectedProducts = products.filter(p => selectedAsins.includes(p.asin));
+    if (selectedProducts.length === 0) {
+      return { success: false, error: 'No products selected for deletion' };
+    }
+
+    try {
+      // Delete from database by ASIN (since these are RapidAPI products, not database products)
+      // We'll delete any database products that match these ASINs
+      const asinsToDelete = selectedProducts.map(p => p.asin).filter(Boolean);
+      
+      if (asinsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('products')
+          .delete()
+          .in('asin', asinsToDelete);
+
+        if (deleteError) {
+          throw new Error(`Database deletion failed: ${deleteError.message}`);
+        }
+      }
+
+      // Also remove from localStorage (RapidAPI products)
+      const savedProducts = localStorage.getItem('sunbeam-products');
+      if (savedProducts) {
+        const parsed = JSON.parse(savedProducts);
+        const filtered = parsed.filter((p: any) => !selectedAsins.includes(p.asin));
+        localStorage.setItem('sunbeam-products', JSON.stringify(filtered));
+      }
+
+      return { success: true, count: selectedProducts.length };
+    } catch (error) {
+      console.error('Delete failed:', error);
+      return { success: false, error: `Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+  };
+
   return {
     exportSelectedProducts,
     handleImport,
-    saveSelectedForUsers
+    saveSelectedForUsers,
+    deleteSelectedProducts
   };
 };
