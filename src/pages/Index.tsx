@@ -32,7 +32,9 @@ const Index = () => {
   const { 
     products: databaseProducts, 
     allProducts,
+    categories,
     loading: loadingDbProducts,
+    // Basic filters
     searchTerm,
     setSearchTerm,
     sortBy,
@@ -40,7 +42,24 @@ const Index = () => {
     priceRange,
     setPriceRange,
     minRating,
-    setMinRating
+    setMinRating,
+    // Enhanced filters
+    categoryFilter,
+    setCategoryFilter,
+    stockStatusFilter,
+    setStockStatusFilter,
+    dealStatusFilter,
+    setDealStatusFilter,
+    apiSourceFilter,
+    setApiSourceFilter,
+    priceStatusFilter,
+    setPriceStatusFilter,
+    recentUpdatesFilter,
+    setRecentUpdatesFilter,
+    commissionRange,
+    setCommissionRange,
+    performanceFilter,
+    setPerformanceFilter
   } = useDatabaseProducts();
 
   const selectedProduct = selectedProductAsin 
@@ -93,6 +112,7 @@ const Index = () => {
               </div>
               
               <DatabaseProductFilters
+                // Basic filters
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 sortBy={sortBy}
@@ -101,6 +121,25 @@ const Index = () => {
                 setPriceRange={setPriceRange}
                 minRating={minRating}
                 setMinRating={setMinRating}
+                // Enhanced filters
+                categories={categories}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                stockStatusFilter={stockStatusFilter}
+                setStockStatusFilter={setStockStatusFilter}
+                dealStatusFilter={dealStatusFilter}
+                setDealStatusFilter={setDealStatusFilter}
+                apiSourceFilter={apiSourceFilter}
+                setApiSourceFilter={setApiSourceFilter}
+                priceStatusFilter={priceStatusFilter}
+                setPriceStatusFilter={setPriceStatusFilter}
+                recentUpdatesFilter={recentUpdatesFilter}
+                setRecentUpdatesFilter={setRecentUpdatesFilter}
+                commissionRange={commissionRange}
+                setCommissionRange={setCommissionRange}
+                performanceFilter={performanceFilter}
+                setPerformanceFilter={setPerformanceFilter}
+                // Counts
                 totalProducts={allProducts.length}
                 filteredCount={databaseProducts.length}
               />
