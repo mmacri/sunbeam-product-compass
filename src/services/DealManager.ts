@@ -42,16 +42,7 @@ export class DealManager {
     try {
       console.log('Starting deal sync...');
       
-      // Fetch current deals from API
-      const dealsResponse = await DealsService.fetchDeals();
-      
-      if (dealsResponse.status !== 'OK' || !dealsResponse.deals) {
-        throw new Error('Failed to fetch deals from API');
-      }
-
-      console.log(`Fetched ${dealsResponse.deals.length} deals from API`);
-
-      // Get products with ASINs for matching
+      // Get products with ASINs for matching first
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id, asin, name, current_deal_id, has_active_deal, deal_last_updated')
@@ -61,12 +52,40 @@ export class DealManager {
         throw new Error(`Failed to fetch products: ${productsError.message}`);
       }
 
+      console.log(`Found ${products?.length || 0} products with ASINs`);
+      
+      // Log a sample of ASINs for debugging
+      if (products && products.length > 0) {
+        console.log('Sample product ASINs:', products.slice(0, 5).map(p => p.asin));
+      }
+      
+      // Fetch current deals from API
+      const dealsResponse = await DealsService.fetchDeals();
+      
+      if (dealsResponse.status !== 'OK' || !dealsResponse.deals) {
+        console.error('Deal API response:', dealsResponse);
+        throw new Error('Failed to fetch deals from API');
+      }
+
+      console.log(`Fetched ${dealsResponse.deals.length} deals from API`);
+      
+      // Log a sample of deal ASINs for debugging
+      if (dealsResponse.deals.length > 0) {
+        console.log('Sample deal ASINs:', dealsResponse.deals.slice(0, 5).map(d => d.product_asin));
+      }
+
+      // Find matching ASINs
+      const productASINs = new Set(products?.map(p => p.asin) || []);
+      const matchingDeals = dealsResponse.deals.filter(deal => productASINs.has(deal.product_asin));
+      
+      console.log(`Found ${matchingDeals.length} matching deals out of ${dealsResponse.deals.length} total deals`);
+
       let dealsAdded = 0;
       let dealsUpdated = 0;
       let dealsDeactivated = 0;
 
-      // Process each deal
-      for (const deal of dealsResponse.deals) {
+      // Process each matching deal
+      for (const deal of matchingDeals) {
         const result = await this.processDeal(deal, products || []);
         if (result.added) dealsAdded++;
         if (result.updated) dealsUpdated++;

@@ -21,6 +21,16 @@ interface DatabaseProduct {
   api_last_updated: string | null;
   created_at: string;
   updated_at: string;
+  has_active_deal?: boolean;
+  current_deal?: {
+    id: string;
+    discount_percentage: number | null;
+    deal_price: number | null;
+    original_price: number | null;
+    deal_type: string | null;
+    deal_end_date: string | null;
+    is_active: boolean;
+  } | null;
 }
 
 export const useDatabaseProducts = () => {
@@ -38,7 +48,18 @@ export const useDatabaseProducts = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          current_deal:product_deals!current_deal_id(
+            id,
+            discount_percentage,
+            deal_price,
+            original_price,
+            deal_type,
+            deal_end_date,
+            is_active
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
