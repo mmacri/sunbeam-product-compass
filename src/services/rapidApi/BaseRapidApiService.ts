@@ -72,6 +72,16 @@ export abstract class BaseRapidApiService {
             products: data.data.products
           };
         }
+        // For deals endpoint, deals are in data.deals
+        if (data.data.deals) {
+          return {
+            ...data.data,
+            status: data.status,
+            request_id: data.request_id,
+            total_deals: data.data.deals.length,
+            deals: data.data.deals
+          };
+        }
         // For product details, the data is directly in data
         return {
           ...data.data,
