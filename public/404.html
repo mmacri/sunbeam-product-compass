@@ -4,12 +4,19 @@
     <meta charset="utf-8">
     <title>Product Comparison Tool</title>
     <script type="text/javascript">
-        // GitHub Pages SPA redirect
-        // https://github.com/rafgraph/spa-github-pages
+        // GitHub Pages SPA redirect for hash router
         var l = window.location;
+        var pathSegments = l.pathname.split('/');
+        var basePath = '';
+        
+        // Handle GitHub Pages subdirectory deployment
+        if (pathSegments.length > 2 && pathSegments[1]) {
+            basePath = '/' + pathSegments[1];
+        }
+        
         l.replace(
             l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-            l.pathname.split('/').slice(0, -1).join('/') + '/#' + l.pathname +
+            basePath + '/#' + l.pathname.replace(basePath, '') +
             (l.search ? '&' + l.search.slice(1) : '') + l.hash
         );
     </script>
