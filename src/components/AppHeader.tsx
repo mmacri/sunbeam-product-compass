@@ -32,7 +32,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center space-x-4">
+            <nav className="flex items-center space-x-4">
               <Link to="/">
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
