@@ -1,30 +1,36 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Upload, Save, Database } from 'lucide-react';
+import { Download, Upload, Save, Database, DollarSign } from 'lucide-react';
 import { Merge } from 'lucide-react';
 
 interface ProductBrowserActionsProps {
   filteredProductsCount: number;
   selectedAsinsCount: number;
+  activeDealsCount?: number;
   onSelectAllFiltered: () => void;
   onClearSelection: () => void;
   onExportSelected: () => void;
   onSaveSelectedForUsers: () => void;
   onUpdateDatabase: () => void;
   onMergeProducts: () => void;
+  onSyncDeals?: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isSyncingDeals?: boolean;
 }
 
 export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
   filteredProductsCount,
   selectedAsinsCount,
+  activeDealsCount = 0,
   onSelectAllFiltered,
   onClearSelection,
   onExportSelected,
   onSaveSelectedForUsers,
   onUpdateDatabase,
   onMergeProducts,
-  onImport
+  onSyncDeals,
+  onImport,
+  isSyncingDeals = false
 }) => {
   return (
     <div className="flex flex-wrap gap-2">
@@ -80,6 +86,18 @@ export const ProductBrowserActions: React.FC<ProductBrowserActionsProps> = ({
         <Merge className="w-4 h-4 mr-2" />
         Merge Duplicates
       </Button>
+      
+      {onSyncDeals && (
+        <Button
+          onClick={onSyncDeals}
+          size="sm"
+          disabled={isSyncingDeals}
+          className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+        >
+          <DollarSign className={`w-4 h-4 mr-2 ${isSyncingDeals ? 'animate-pulse' : ''}`} />
+          {isSyncingDeals ? 'Syncing...' : `Sync Deals (${activeDealsCount})`}
+        </Button>
+      )}
       <div className="flex items-center gap-2">
         <input
           type="file"

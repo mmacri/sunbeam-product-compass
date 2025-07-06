@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, TrendingDown, Users, DollarSign, Calendar, BarChart3 } from 'lucide-react';
+import { DealBadge } from './DealBadge';
 
 interface DatabaseProduct {
   id: string;
@@ -24,6 +25,16 @@ interface DatabaseProduct {
   api_last_updated: string | null;
   created_at: string;
   updated_at: string;
+  has_active_deal?: boolean;
+  current_deal?: {
+    id: string;
+    discount_percentage: number | null;
+    deal_price: number | null;
+    original_price: number | null;
+    deal_type: string | null;
+    deal_end_date: string | null;
+    is_active: boolean;
+  } | null;
 }
 
 interface EnhancedProductCardProps {
@@ -107,7 +118,14 @@ export const EnhancedProductCard: React.FC<EnhancedProductCardProps> = ({ produc
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-orange-200">
-      {/* Product Image */}
+        {/* Deal Badge */}
+        {product.has_active_deal && product.current_deal && (
+          <div className="absolute top-2 left-2 z-10">
+            <DealBadge deal={product.current_deal} />
+          </div>
+        )}
+
+        {/* Product Image */}
       <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 relative">
         <img
           src={product.image_url || '/placeholder.svg'}

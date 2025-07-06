@@ -20,6 +20,7 @@ import { TemplateManagement } from '@/components/admin/TemplateManagement';
 import { ReportsAndLogs } from '@/components/admin/ReportsAndLogs';
 import { AdminSettings } from '@/components/admin/AdminSettings';
 import { ProductBrowser } from '@/components/admin/ProductBrowser';
+import { DealManagement } from '@/components/admin/DealManagement';
 
 interface Product {
   id: string;
@@ -174,10 +175,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Products
+            </TabsTrigger>
+            <TabsTrigger value="deals" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Deals
             </TabsTrigger>
             <TabsTrigger value="browse" className="flex items-center gap-2">
               <Search className="w-4 h-4" />
@@ -211,6 +216,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onShowMessage={showMessage}
               onLogAction={logAction}
             />
+          </TabsContent>
+
+          <TabsContent value="deals" className="space-y-6">
+            <DealManagement onShowMessage={showMessage} />
           </TabsContent>
 
           <TabsContent value="browse" className="space-y-6">

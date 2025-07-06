@@ -3,6 +3,7 @@ import { useProductBrowserData } from '@/hooks/useProductBrowserData';
 import { useProductBrowserSelection } from '@/hooks/useProductBrowserSelection';
 import { useProductOperations } from '@/hooks/useProductOperations';
 import { useProductDatabase } from '@/hooks/useProductDatabase';
+import { useDeals } from '@/hooks/useDeals';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductBrowserHeader } from './ProductBrowserHeader';
 import { ProductBrowserControls } from './ProductBrowserControls';
@@ -53,6 +54,7 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
   } = useProductOperations();
 
   const { updateDatabase } = useProductDatabase();
+  const { syncDeals, syncing, deals } = useDeals();
 
   // Event handlers that bridge hooks with UI feedback
   const handleLoadFromRapidApiWithFeedback = async () => {
@@ -174,6 +176,30 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
     }
   };
 
+  const handleSyncDealsWithFeedback = async () => {
+    onShowMessage('Syncing deals... This may take a moment.', 'success');
+    
+    try {
+      const result = await syncDeals();
+      
+      if (result.success) {
+        onShowMessage(`Deal sync completed: ${result.dealsProcessed} processed, ${result.dealsAdded} added, ${result.dealsUpdated} updated, ${result.dealsDeactivated} deactivated`);
+        onLogAction('sync_deals_success', { 
+          dealsProcessed: result.dealsProcessed, 
+          dealsAdded: result.dealsAdded, 
+          dealsUpdated: result.dealsUpdated,
+          dealsDeactivated: result.dealsDeactivated
+        });
+      } else {
+        onShowMessage(`Deal sync failed: ${result.error}`, 'error');
+        onLogAction('sync_deals_error', { error: result.error });
+      }
+    } catch (error) {
+      onShowMessage(`Failed to sync deals: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      onLogAction('sync_deals_error', { error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <ProductBrowserHeader
@@ -199,13 +225,16 @@ export const ProductBrowser: React.FC<ProductBrowserProps> = ({
       <ProductBrowserActions
         filteredProductsCount={filteredProducts.length}
         selectedAsinsCount={selectedAsins.length}
+        activeDealsCount={deals.length}
         onSelectAllFiltered={handleSelectAllFilteredWithFeedback}
         onClearSelection={handleClearSelectionWithFeedback}
         onExportSelected={handleExportWithFeedback}
         onSaveSelectedForUsers={handleSaveSelectedForUsersWithFeedback}
         onUpdateDatabase={handleUpdateDatabaseWithFeedback}
         onMergeProducts={handleMergeProductsWithFeedback}
+        onSyncDeals={handleSyncDealsWithFeedback}
         onImport={handleImportWithFeedback}
+        isSyncingDeals={syncing}
       />
 
       <ProductBrowserGrid
