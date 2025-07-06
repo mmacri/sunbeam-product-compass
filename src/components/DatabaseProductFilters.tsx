@@ -25,7 +25,7 @@ interface DatabaseProductFiltersProps {
   setMinRating: (rating: number) => void;
   
   // Enhanced filters
-  categories: Category[];
+  categories: Category[] | undefined;
   categoryFilter: string;
   setCategoryFilter: (category: string) => void;
   stockStatusFilter: string;
@@ -149,11 +149,11 @@ export const DatabaseProductFilters: React.FC<DatabaseProductFiltersProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
+                  {categories?.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
-                  ))}
+                  )) || []}
                 </SelectContent>
               </Select>
             </div>
