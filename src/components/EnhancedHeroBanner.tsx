@@ -3,65 +3,72 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Star, TrendingUp, Gift } from 'lucide-react';
+import { useDeals } from '@/hooks/useDeals';
 
 export const EnhancedHeroBanner: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { deals, loading } = useDeals();
 
-  const featuredProducts = [
+  // Transform real deals data into the format expected by the UI
+  const featuredProducts = deals
+    .filter(deal => deal.is_active && deal.deal_title && deal.deal_price && deal.original_price)
+    .slice(0, 3) // Limit to 3 featured deals
+    .map((deal, index) => ({
+      id: deal.id,
+      title: deal.deal_title || 'Special Deal',
+      subtitle: deal.deal_type?.replace(/[_-]/g, ' ').toUpperCase() || 'Recovery Deal',
+      description: `Amazing savings on high-quality recovery products`,
+      price: `$${deal.deal_price?.toFixed(2)}`,
+      originalPrice: `$${deal.original_price?.toFixed(2)}`,
+      discount: deal.discount_percentage ? `${Math.round(deal.discount_percentage)}% OFF` : 'DEAL',
+      badge: index === 0 ? 'Hot Deal' : index === 1 ? 'Limited Time' : 'Special Offer',
+      cta: deal.deal_url ? 'Shop Now' : 'View Deal',
+      highlight: index === 0 ? 'Best Deal' : index === 1 ? "Editor's Choice" : 'Popular Choice'
+    }));
+
+  // Fallback data if no deals are available
+  const fallbackProducts = [
     {
-      id: 1,
-      title: 'Winter Recovery Sale',
-      subtitle: 'Premium Massage Guns',
-      description: 'Professional-grade percussion therapy for deep muscle relief',
-      price: '$299',
-      originalPrice: '$399',
-      discount: '25% OFF',
-      badge: 'Limited Time',
-      cta: 'Shop Now',
-      highlight: 'Best Seller'
-    },
-    {
-      id: 2,
-      title: 'New Year, New Recovery',
-      subtitle: 'Complete Recovery System',
-      description: 'Everything you need for a comprehensive recovery routine',
-      price: '$199',
-      originalPrice: '$299',
-      discount: '33% OFF',
-      badge: 'New Arrival',
-      cta: 'Learn More',
-      highlight: "Editor's Choice"
-    },
-    {
-      id: 3,
-      title: "Athlete's Choice",
-      subtitle: 'Pro Compression Boots',
-      description: 'Used by professional athletes for rapid recovery',
-      price: '$599',
-      originalPrice: '$799',
-      discount: '25% OFF',
-      badge: 'Pro Grade',
-      cta: 'View Details',
-      highlight: 'Professional Approved'
+      id: 'fallback-1',
+      title: 'Recovery Products',
+      subtitle: 'Premium Quality',
+      description: 'Discover our curated selection of recovery tools',
+      price: 'From $99',
+      originalPrice: '',
+      discount: '',
+      badge: 'Popular',
+      cta: 'Browse Products',
+      highlight: 'Top Rated'
     }
   ];
 
+  const displayProducts = featuredProducts.length > 0 ? featuredProducts : fallbackProducts;
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % featuredProducts.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+    if (displayProducts.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % displayProducts.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [displayProducts.length]);
+
+  // Reset slide index if it's out of bounds
+  useEffect(() => {
+    if (currentSlide >= displayProducts.length) {
+      setCurrentSlide(0);
+    }
+  }, [displayProducts.length, currentSlide]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % featuredProducts.length);
+    setCurrentSlide((prev) => (prev + 1) % displayProducts.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + featuredProducts.length) % featuredProducts.length);
+    setCurrentSlide((prev) => (prev - 1 + displayProducts.length) % displayProducts.length);
   };
 
-  const currentProduct = featuredProducts[currentSlide];
+  const currentProduct = displayProducts[currentSlide];
 
   return (
     <div className="relative mb-16">
@@ -105,12 +112,16 @@ export const EnhancedHeroBanner: React.FC = () => {
                   {/* Pricing */}
                   <div className="flex items-center gap-4 mb-8">
                     <div className="text-4xl font-bold">{currentProduct.price}</div>
-                    <div className="text-lg text-orange-200 line-through">
-                      {currentProduct.originalPrice}
-                    </div>
-                    <Badge variant="destructive" className="text-lg px-3 py-1">
-                      {currentProduct.discount}
-                    </Badge>
+                    {currentProduct.originalPrice && (
+                      <div className="text-lg text-orange-200 line-through">
+                        {currentProduct.originalPrice}
+                      </div>
+                    )}
+                    {currentProduct.discount && (
+                      <Badge variant="destructive" className="text-lg px-3 py-1">
+                        {currentProduct.discount}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* CTAs */}
@@ -164,31 +175,37 @@ export const EnhancedHeroBanner: React.FC = () => {
             </div>
 
             {/* Navigation Arrows */}
-            <button
-              onClick={prevSlide}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
+            {displayProducts.length > 1 && (
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
 
             {/* Slide Indicators */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-              {featuredProducts.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    index === currentSlide ? 'bg-white' : 'bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
+            {displayProducts.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                {displayProducts.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      index === currentSlide ? 'bg-white' : 'bg-white/40'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
