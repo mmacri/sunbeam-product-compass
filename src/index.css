@@ -18,8 +18,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 14 100% 57%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -38,6 +38,14 @@ All colors MUST be HSL.
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    /* Recovery theme colors */
+    --recovery-primary: 14 100% 57%;
+    --recovery-secondary: 45 100% 51%;
+    --recovery-accent: 168 76% 42%;
+    --recovery-wellness: 142 71% 45%;
+    --recovery-athlete: 217 91% 60%;
+    --recovery-guide: 262 83% 58%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;

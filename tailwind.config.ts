@@ -61,6 +61,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Recovery theme colors
+				recovery: {
+					primary: 'hsl(var(--recovery-primary))',
+					secondary: 'hsl(var(--recovery-secondary))',
+					accent: 'hsl(var(--recovery-accent))',
+					wellness: 'hsl(var(--recovery-wellness))',
+					athlete: 'hsl(var(--recovery-athlete))',
+					guide: 'hsl(var(--recovery-guide))'
 				}
 			},
 			borderRadius: {
