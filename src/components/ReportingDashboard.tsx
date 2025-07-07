@@ -5,11 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, TrendingUp, Package, Star } from 'lucide-react';
-import { mockProducts } from '@/utils/mockData';
+import { useAdminProducts } from '@/hooks/useAdminProducts';
 
 export const ReportingDashboard = () => {
-  const categoryData = mockProducts.reduce((acc, product) => {
-    acc[product.category] = (acc[product.category] || 0) + 1;
+  const { realProducts: products, loadAdminProducts } = useAdminProducts();
+
+  if (!products || products.length === 0) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Card className="text-center">
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">No products available. Load products from admin panel first.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const categoryData = products.reduce((acc, product) => {
+    const category = product.attributes?.category || 'Uncategorized';
+    acc[category] = (acc[category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -20,9 +35,9 @@ export const ReportingDashboard = () => {
 
   const pieColors = ['#f97316', '#3b82f6', '#ef4444', '#10b981', '#8b5cf6'];
 
-  const totalProducts = mockProducts.length;
-  const avgRating = (mockProducts.reduce((sum, p) => sum + p.rating, 0) / totalProducts).toFixed(1);
-  const totalReviews = mockProducts.reduce((sum, p) => sum + p.reviews, 0);
+  const totalProducts = products.length;
+  const avgRating = totalProducts > 0 ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / totalProducts).toFixed(1) : '0';
+  const totalReviews = products.reduce((sum, p) => sum + (p.attributes?.reviewCount || 0), 0);
 
   const generateReport = (format: 'csv' | 'json' | 'summary') => {
     const reportData = {
@@ -33,20 +48,19 @@ export const ReportingDashboard = () => {
         totalReviews,
         categories: categoryData
       },
-      products: mockProducts.map(product => ({
+      products: products.map(product => ({
         id: product.id,
-        title: product.title,
-        currentPrice: product.currentPrice,
+        name: product.name,
+        price: product.price,
         rating: product.rating,
-        reviews: product.reviews,
-        category: product.category,
+        category: product.attributes?.category || 'Uncategorized',
       }))
     };
 
     if (format === 'csv') {
-      const headers = ['ID', 'Title', 'Price', 'Rating', 'Reviews', 'Category'];
+      const headers = ['ID', 'Name', 'Price', 'Rating', 'Category'];
       const rows = reportData.products.map(p => [
-        p.id, p.title, p.currentPrice, p.rating, p.reviews, p.category
+        p.id, p.name, p.price, p.rating, p.category
       ]);
       const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
       

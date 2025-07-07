@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { mockProducts } from '@/utils/mockData';
 import { useSelectedProducts } from './useSelectedProducts';
 import { useAdminProducts } from './useAdminProducts';
 import { useRapidApiProducts } from './useRapidApiProducts';
@@ -10,8 +9,7 @@ import {
   transformRapidApiProduct,
   transformRapidApiToSearchableProduct,
   transformAdminProduct,
-  transformToSearchableProduct,
-  transformMockToSearchableProduct
+  transformToSearchableProduct
 } from '@/utils/productTransformers';
 
 interface SearchableProduct {
@@ -116,19 +114,19 @@ export const useProductData = () => {
         }
       }
 
-      // Priority 4: Fallback to mock data
-      console.log('Using mock products as fallback');
-      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
+      // Priority 4: Empty state - no data available
+      console.log('No products available - empty state');
+      setSearchableProducts([]);
+      setProducts([]);
+      setFilteredProducts([]);
       setIsInitialized(true);
       
     } catch (error) {
       console.error('Error loading initial data:', error);
-      // Fallback to mock data on error
-      setSearchableProducts(mockProducts.map(transformMockToSearchableProduct));
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
+      // Show empty state on error
+      setSearchableProducts([]);
+      setProducts([]);
+      setFilteredProducts([]);
       setIsInitialized(true);
     }
   };

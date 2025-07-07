@@ -122,17 +122,3 @@ export const transformToSearchableProduct = (adminProduct: any): SearchableProdu
     lastUpdated: adminProduct.lastUpdated
   };
 };
-
-export const transformMockToSearchableProduct = (mockProduct: any): SearchableProduct => {
-  return {
-    id: mockProduct.id.toString(),
-    title: mockProduct.title,
-    price: mockProduct.currentPrice,
-    category: mockProduct.category,
-    categories: [mockProduct.category],
-    metaTags: ['premium', 'highly-rated'],
-    searchTerms: mockProduct.title.toLowerCase().split(' '),
-    tags: ['featured', 'popular'],
-    lastUpdated: new Date().toISOString()
-  };
-};
