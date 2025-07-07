@@ -476,7 +476,7 @@ export type Database = {
       }
       product_deals: {
         Row: {
-          asin: string
+          asin: string | null
           created_at: string
           deal_end_date: string | null
           deal_price: number | null
@@ -493,7 +493,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          asin: string
+          asin?: string | null
           created_at?: string
           deal_end_date?: string | null
           deal_price?: number | null
@@ -510,7 +510,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          asin?: string
+          asin?: string | null
           created_at?: string
           deal_end_date?: string | null
           deal_price?: number | null

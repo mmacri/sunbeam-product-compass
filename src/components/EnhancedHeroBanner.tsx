@@ -130,8 +130,15 @@ export const EnhancedHeroBanner: React.FC = () => {
                       size="lg" 
                       variant="secondary"
                       className="bg-white text-recovery-primary hover:bg-orange-50 text-lg px-8 py-3"
+                      onClick={() => {
+                        const currentDeal = deals.find(deal => deal.id === currentProduct.id);
+                        if (currentDeal?.deal_url) {
+                          window.open(currentDeal.deal_url, '_blank');
+                        }
+                      }}
+                      disabled={!deals.find(deal => deal.id === currentProduct.id)?.deal_url}
                     >
-                      {currentProduct.cta}
+                      {deals.find(deal => deal.id === currentProduct.id)?.deal_url ? 'Shop Now' : 'View Deal'}
                     </Button>
                     <Button 
                       size="lg" 
