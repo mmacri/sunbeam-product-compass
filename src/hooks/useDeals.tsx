@@ -41,8 +41,21 @@ export const useDeals = () => {
     setError(null);
     try {
       const activeDeals = await DealManager.getActiveDeals();
-      setDeals(activeDeals);
+      console.log('Fetched deals:', activeDeals.length, 'deals');
+      console.log('Sample deal data:', activeDeals[0]);
+      
+      // Filter deals that have proper URLs for the hero banner
+      const validDeals = activeDeals.filter(deal => 
+        deal.deal_url && 
+        deal.deal_title && 
+        deal.deal_price !== null && 
+        deal.original_price !== null
+      );
+      
+      console.log('Valid deals with URLs:', validDeals.length);
+      setDeals(validDeals);
     } catch (err) {
+      console.error('Failed to fetch deals:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch deals');
     } finally {
       setLoading(false);

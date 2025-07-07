@@ -11,38 +11,55 @@ export const EnhancedHeroBanner: React.FC = () => {
 
   // Transform real deals data into the format expected by the UI
   const featuredProducts = deals
-    .filter(deal => deal.is_active && deal.deal_title && deal.deal_price && deal.original_price)
+    .filter(deal => 
+      deal.is_active && 
+      deal.deal_title && 
+      deal.deal_price && 
+      deal.original_price &&
+      deal.deal_url // Only show deals with actual URLs
+    )
     .slice(0, 3) // Limit to 3 featured deals
     .map((deal, index) => ({
       id: deal.id,
       title: deal.deal_title || 'Special Deal',
       subtitle: deal.deal_type?.replace(/[_-]/g, ' ').toUpperCase() || 'Recovery Deal',
-      description: `Amazing savings on high-quality recovery products`,
+      description: `Save ${deal.discount_percentage ? Math.round(deal.discount_percentage) : ''}% on ${deal.deal_title}`,
       price: `$${deal.deal_price?.toFixed(2)}`,
       originalPrice: `$${deal.original_price?.toFixed(2)}`,
       discount: deal.discount_percentage ? `${Math.round(deal.discount_percentage)}% OFF` : 'DEAL',
       badge: index === 0 ? 'Hot Deal' : index === 1 ? 'Limited Time' : 'Special Offer',
-      cta: deal.deal_url ? 'Shop Now' : 'View Deal',
-      highlight: index === 0 ? 'Best Deal' : index === 1 ? "Editor's Choice" : 'Popular Choice'
+      cta: 'Shop Now',
+      highlight: index === 0 ? 'Best Deal' : index === 1 ? "Editor's Choice" : 'Popular Choice',
+      hasValidUrl: !!deal.deal_url
     }));
 
-  // Fallback data if no deals are available
-  const fallbackProducts = [
-    {
-      id: 'fallback-1',
-      title: 'Recovery Products',
-      subtitle: 'Premium Quality',
-      description: 'Discover our curated selection of recovery tools',
-      price: 'From $99',
-      originalPrice: '',
-      discount: '',
-      badge: 'Popular',
-      cta: 'Browse Products',
-      highlight: 'Top Rated'
-    }
-  ];
+  // Show message when no valid deals are available
+  const hasValidDeals = featuredProducts.length > 0;
 
-  const displayProducts = featuredProducts.length > 0 ? featuredProducts : fallbackProducts;
+  const displayProducts = featuredProducts.length > 0 ? featuredProducts : [{
+    id: 'no-deals',
+    title: 'Recovery Products Coming Soon',
+    subtitle: 'Premium Deals Loading',
+    description: 'We\'re updating our latest deals - check back soon for amazing savings!',
+    price: 'Deals Loading...',
+    originalPrice: '',
+    discount: '',
+    badge: 'Coming Soon',
+    cta: 'Check Back Soon',
+    highlight: 'Updates Coming',
+    hasValidUrl: false
+  }];
+
+  // Add debug logging
+  React.useEffect(() => {
+    console.log('Deals loading status:', loading);
+    console.log('Total deals fetched:', deals.length);
+    console.log('Valid featured deals:', featuredProducts.length);
+    console.log('Has valid deals:', hasValidDeals);
+    if (deals.length > 0) {
+      console.log('Sample deal:', deals[0]);
+    }
+  }, [deals, loading, featuredProducts.length, hasValidDeals]);
 
   useEffect(() => {
     if (displayProducts.length > 0) {
