@@ -16,7 +16,6 @@ export const EnhancedHeroBanner: React.FC = () => {
       price: '$299',
       originalPrice: '$399',
       discount: '25% OFF',
-      image: '/api/placeholder/600/400',
       badge: 'Limited Time',
       cta: 'Shop Now',
       highlight: 'Best Seller'
@@ -29,20 +28,18 @@ export const EnhancedHeroBanner: React.FC = () => {
       price: '$199',
       originalPrice: '$299',
       discount: '33% OFF',
-      image: '/api/placeholder/600/400',
       badge: 'New Arrival',
       cta: 'Learn More',
-      highlight: 'Editor\'s Choice'
+      highlight: "Editor's Choice"
     },
     {
       id: 3,
-      title: 'Athlete\'s Choice',
+      title: "Athlete's Choice",
       subtitle: 'Pro Compression Boots',
       description: 'Used by professional athletes for rapid recovery',
       price: '$599',
       originalPrice: '$799',
       discount: '25% OFF',
-      image: '/api/placeholder/600/400',
       badge: 'Pro Grade',
       cta: 'View Details',
       highlight: 'Professional Approved'
@@ -74,7 +71,7 @@ export const EnhancedHeroBanner: React.FC = () => {
           <div className="relative min-h-[500px] md:min-h-[600px]">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+              <div className="absolute inset-0 bg-white/5"></div>
             </div>
 
             {/* Content */}
@@ -150,7 +147,6 @@ export const EnhancedHeroBanner: React.FC = () => {
                 {/* Right Content - Product Image */}
                 <div className="relative">
                   <div className="aspect-square bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                    {/* Placeholder for product image */}
                     <div className="w-full h-full rounded-2xl bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center">
                       <div className="text-6xl opacity-50">🔧</div>
                     </div>
