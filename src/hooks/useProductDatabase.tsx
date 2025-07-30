@@ -5,9 +5,8 @@ import { RapidApiService } from '@/services/rapidApi';
 export const useProductDatabase = () => {
   // Helper function to convert Amazon URL to affiliate URL
   const createAffiliateUrl = (originalUrl: string, asin: string) => {
-    // Extract the base Amazon URL and add affiliate tag
-    const baseUrl = originalUrl.split('?')[0]; // Remove existing query params
-    return `${baseUrl}?tag=homefitrecove-20`; // Add your affiliate tag
+    // Always use the standardized Amazon affiliate URL format
+    return `http://www.amazon.com/dp/${asin}/ref=nosim?tag=homefitrecove-20`;
   };
 
   const updateDatabase = async (selectedProducts: RapidApiProduct[]) => {
