@@ -13,7 +13,7 @@ import {
   User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+// Removed auth requirement - site is now fully public
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { UnifiedProductWorkflow } from '@/components/admin/UnifiedProductWorkflow';
 import { TemplateManagement } from '@/components/admin/TemplateManagement';
@@ -54,7 +54,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('products');
   const { toast } = useToast();
-  const { user, isAdmin, signOut } = useAuth();
+  // Removed auth checks - admin panel is now public
 
   useEffect(() => {
     const initializeAdmin = async () => {
@@ -163,14 +163,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <User className="w-4 h-4" />
-              <span>{user?.email}</span>
-              {isAdmin && <span className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs">Admin</span>}
+              <Settings className="w-4 h-4" />
+              <span>Public Admin Panel</span>
+              <span className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs">Open Access</span>
             </div>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
           </div>
         </header>
 
