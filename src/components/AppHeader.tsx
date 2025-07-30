@@ -36,11 +36,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <Link to="/">
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
-                  Products
+                  Home
                 </Button>
               </Link>
+              <Link to="/tool-reviews">
+                <Button variant="ghost" size="sm">Tool Reviews</Button>
+              </Link>
+              <Link to="/guides">
+                <Button variant="ghost" size="sm">Guides</Button>
+              </Link>
+              <Link to="/athletes">
+                <Button variant="ghost" size="sm">Athletes</Button>
+              </Link>
+              <Link to="/everyday-recovery">
+                <Button variant="ghost" size="sm">Recovery</Button>
+              </Link>
               <Link to="/admin">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40">
+                <Button variant="default" size="sm" className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700">
                   <Settings className="w-4 h-4" />
                   Admin Panel
                 </Button>

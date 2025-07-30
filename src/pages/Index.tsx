@@ -15,7 +15,7 @@ import { ProductGrid } from '@/components/ProductGrid';
 import { AppFooter } from '@/components/AppFooter';
 import { FullProductPage } from '@/components/FullProductPage';
 import { Link } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, Rocket } from 'lucide-react';
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -97,6 +97,39 @@ const Index = () => {
 
       <main className="container mx-auto px-6 py-8">
         <HeroSection />
+
+        {/* Admin Access Section */}
+        <div className="mb-8">
+          <Card className="border-2 border-dashed border-indigo-300 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-xl font-semibold mb-3 text-indigo-700 dark:text-indigo-300">
+                🛠️ Full Site Access - No Login Required
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                This site is completely open - anyone can access all features including the admin panel.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/admin">
+                  <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700">
+                    🚀 Open Admin Panel
+                  </Button>
+                </Link>
+                <Link to="/tool-reviews">
+                  <Button variant="outline">📝 Tool Reviews</Button>
+                </Link>
+                <Link to="/guides">
+                  <Button variant="outline">📚 Guides</Button>
+                </Link>
+                <Link to="/athletes">
+                  <Button variant="outline">🏃 Athletes</Button>
+                </Link>
+                <Link to="/everyday-recovery">
+                  <Button variant="outline">💪 Recovery</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="grid gap-8 md:gap-12">
           {/* Database Products Section */}
